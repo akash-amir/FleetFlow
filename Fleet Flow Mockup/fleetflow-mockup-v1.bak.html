@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FleetFlow — Operations Command Center</title>
+<style>
+:root{
+  --bg:#f6f8fb;--surface:#fff;--border:#e4e8ef;--text:#182230;--muted:#718096;
+  --blue:#2563eb;--blue-soft:#eff6ff;--green:#16a34a;--green-soft:#ecfdf3;
+  --amber:#d97706;--amber-soft:#fffbeb;--red:#dc2626;--red-soft:#fef2f2;
+  --purple:#7c3aed;--shadow:0 8px 28px rgba(20,30,50,.06);
+}
+*{box-sizing:border-box}body{margin:0;font-family:Inter,ui-sans-serif,system-ui,-apple-system,Segoe UI,sans-serif;background:var(--bg);color:var(--text)}
+button,input,select{font:inherit}.app{display:flex;min-height:100vh}.sidebar{width:245px;background:#fff;border-right:1px solid var(--border);padding:20px 14px;position:fixed;inset:0 auto 0 0;z-index:5}
+.logo{display:flex;align-items:center;gap:10px;padding:5px 10px 25px;font-weight:800;font-size:19px}.logo-mark{width:32px;height:32px;border-radius:9px;background:var(--blue);color:#fff;display:grid;place-items:center}
+.org{background:#f7f9fc;border:1px solid var(--border);border-radius:10px;padding:10px;margin-bottom:22px}.org small{color:var(--muted);font-size:11px}.org strong{display:block;font-size:13px;margin-top:3px}
+.nav-label{font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:#9aa4b2;padding:10px 10px 6px}.nav-item{height:40px;padding:0 10px;border-radius:8px;display:flex;align-items:center;gap:10px;color:#667085;font-size:13px;cursor:pointer;margin:2px 0}.nav-item:hover,.nav-item.active{background:var(--blue-soft);color:var(--blue);font-weight:600}.nav-item .count{margin-left:auto;background:var(--red);color:white;border-radius:20px;font-size:10px;padding:2px 6px}.main{margin-left:245px;width:calc(100% - 245px)}.topbar{height:62px;background:#fff;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 28px;position:sticky;top:0;z-index:4}.search{width:290px;border:1px solid var(--border);background:#f8fafc;border-radius:8px;padding:8px 12px;color:#98a2b3}.top-actions{display:flex;align-items:center;gap:18px;font-size:13px}.avatar{width:34px;height:34px;border-radius:50%;background:#e9eef8;display:grid;place-items:center;font-weight:700;font-size:12px}.content{padding:28px;max-width:1500px;margin:auto}.page-head{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:22px}.page-head h1{font-size:24px;margin:0 0 5px}.page-head p{margin:0;color:var(--muted);font-size:13px}.actions{display:flex;gap:8px}.btn{border:1px solid var(--border);background:#fff;padding:9px 13px;border-radius:8px;cursor:pointer;font-size:12px}.btn.primary{background:var(--blue);border-color:var(--blue);color:#fff}.btn.danger{color:var(--red);background:var(--red-soft);border-color:#fecaca}
+.live-strip{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:18px}.stat{background:#fff;border:1px solid var(--border);border-radius:10px;padding:15px;box-shadow:var(--shadow)}.stat-label{font-size:11px;color:var(--muted)}.stat-value{font-size:23px;font-weight:750;margin-top:5px}.stat-note{font-size:10px;margin-top:3px}.green{color:var(--green)}.amber{color:var(--amber)}.red{color:var(--red)}.blue{color:var(--blue)}
+.grid-main{display:grid;grid-template-columns:minmax(0,1.65fr) minmax(300px,.8fr);gap:16px}.panel{background:#fff;border:1px solid var(--border);border-radius:11px;box-shadow:var(--shadow);overflow:hidden}.panel-head{padding:16px 18px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center}.panel-title{font-weight:700;font-size:14px}.panel-sub{font-size:11px;color:var(--muted);margin-top:3px}.map{height:440px;position:relative;background:#eef2f5;overflow:hidden}
+.map:before,.map:after{content:"";position:absolute;background:#fff;opacity:.9}.map:before{width:140%;height:18px;transform:rotate(22deg);top:48%;left:-15%;box-shadow:0 80px #fff,-80px -95px #fff}.map:after{height:140%;width:15px;transform:rotate(-35deg);left:56%;top:-20%;box-shadow:100px 80px #fff,-170px 150px #fff}
+.route{position:absolute;height:4px;background:var(--blue);transform-origin:left center;border-radius:10px;z-index:2}.r1{width:270px;left:18%;top:56%;transform:rotate(-18deg)}.r2{width:220px;left:50%;top:37%;transform:rotate(35deg)}.r3{width:180px;left:35%;top:62%;transform:rotate(25deg)}
+.pin{position:absolute;width:30px;height:30px;border-radius:50%;display:grid;place-items:center;background:#fff;border:3px solid var(--blue);box-shadow:0 4px 12px #0002;z-index:3;font-size:14px}.p1{left:17%;top:53%}.p2{left:47%;top:34%}.p3{left:66%;top:59%}.p4{left:34%;top:68%}.p5{left:78%;top:28%}.map-status{position:absolute;top:14px;left:14px;background:#fff;border:1px solid var(--border);padding:8px 10px;border-radius:8px;z-index:3;font-size:11px;box-shadow:var(--shadow)}.live-dot{display:inline-block;width:7px;height:7px;background:var(--green);border-radius:50%;margin-right:5px}
+.map-tools{position:absolute;right:14px;top:14px;z-index:3;display:flex;flex-direction:column;gap:5px}.map-tools button{width:34px;height:34px;border:1px solid var(--border);background:#fff;border-radius:7px;cursor:pointer}
+.alert-list{padding:8px 14px}.alert{display:flex;gap:10px;padding:12px 7px;border-bottom:1px solid #eef1f5;cursor:pointer}.alert:last-child{border:0}.ico{width:28px;height:28px;border-radius:7px;display:grid;place-items:center;font-size:12px;flex:none}.risk .ico{background:var(--amber-soft);color:var(--amber)}.critical .ico{background:var(--red-soft);color:var(--red)}.ok .ico{background:var(--green-soft);color:var(--green)}.alert strong{font-size:12px;display:block}.alert p{margin:3px 0 0;font-size:10px;color:var(--muted);line-height:1.4}.alert button{margin-top:6px;border:0;background:transparent;color:var(--blue);padding:0;font-size:10px;cursor:pointer;font-weight:650}
+.bottom-grid{display:grid;grid-template-columns:1.2fr .8fr;gap:16px;margin-top:16px}.table{width:100%;border-collapse:collapse;font-size:11px}.table th,.table td{text-align:left;padding:12px 14px;border-bottom:1px solid #eef1f5}.table th{font-size:10px;text-transform:uppercase;color:#98a2b3;letter-spacing:.04em}.driver{display:flex;align-items:center;gap:8px}.mini-avatar{width:28px;height:28px;border-radius:50%;background:#e9eef8;display:grid;place-items:center;font-size:9px;font-weight:700}.badge{padding:4px 7px;border-radius:20px;font-size:9px;font-weight:650}.badge.green{background:var(--green-soft)}.badge.amber{background:var(--amber-soft)}.badge.red{background:var(--red-soft)}
+.activity{padding:5px 18px}.event{display:flex;gap:12px;padding:13px 0;border-bottom:1px solid #eef1f5}.event:last-child{border:0}.time{font-size:10px;color:#98a2b3;width:45px}.event-icon{width:25px;height:25px;border-radius:50%;background:#f2f4f7;display:grid;place-items:center;font-size:10px}.event-text strong{font-size:11px}.event-text p{font-size:10px;color:var(--muted);margin:3px 0}
+.ai{margin-top:16px;background:#fff;border:1px solid #ddd6fe;border-radius:11px;box-shadow:var(--shadow)}.ai .panel-head{background:#faf8ff}.ai-title{display:flex;align-items:center;gap:8px}.ai-mark{width:27px;height:27px;border-radius:7px;background:#ede9fe;color:var(--purple);display:grid;place-items:center;font-weight:800}.ai-body{padding:15px 18px}.ai-insight{background:#fafafa;border:1px solid #eceff3;border-radius:8px;padding:12px;font-size:11px;line-height:1.55}.ai-insight strong{font-size:12px}.ai-actions{margin-top:10px;display:flex;gap:7px}.ai-actions button{border:1px solid var(--border);background:#fff;border-radius:7px;padding:7px 10px;font-size:10px;cursor:pointer}
+.modal-bg{display:none;position:fixed;inset:0;background:#0007;z-index:20;align-items:center;justify-content:center}.modal{width:560px;background:#fff;border-radius:13px;box-shadow:0 20px 70px #0004}.modal-head{padding:18px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between}.modal-body{padding:18px}.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.field label{font-size:10px;color:var(--muted);display:block;margin-bottom:5px}.field input,.field select{width:100%;padding:9px;border:1px solid var(--border);border-radius:7px}.modal-foot{padding:14px 18px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:8px}
+.toast{position:fixed;right:25px;bottom:25px;background:#182230;color:#fff;padding:11px 14px;border-radius:8px;font-size:11px;display:none;z-index:30}
+@media(max-width:1050px){.sidebar{width:210px}.main{margin-left:210px;width:calc(100% - 210px)}.live-strip{grid-template-columns:repeat(3,1fr)}.grid-main,.bottom-grid{grid-template-columns:1fr}}
+@media(max-width:720px){.sidebar{display:none}.main{margin:0;width:100%}.topbar{padding:0 15px}.search{width:180px}.content{padding:16px}.live-strip{grid-template-columns:1fr 1fr}.page-head{gap:12px}.actions .btn:first-child{display:none}.map{height:340px}.form-grid{grid-template-columns:1fr}}
+.nav-item,.org,.avatar,.top-actions span,.btn,.map-tools button,.pin,.stat.clickable{cursor:pointer}.nav-item.active{font-weight:700}
+.view-page{display:none}.view-page.active{display:block}.subnav-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px}.subnav-head h2{margin:0;font-size:21px}.subnav-head p{margin:4px 0 0;color:var(--muted);font-size:12px}.cards4{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px}.simple-grid{display:grid;grid-template-columns:1.2fr .8fr;gap:16px}.list-card{background:#fff;border:1px solid var(--border);border-radius:11px;box-shadow:var(--shadow);overflow:hidden}.list-card .head{padding:14px 16px;border-bottom:1px solid var(--border);font-weight:700;font-size:13px}.list-row{padding:13px 16px;border-bottom:1px solid #eef1f5;display:flex;justify-content:space-between;align-items:center;gap:12px;font-size:12px}.list-row:last-child{border-bottom:0}.muted{color:var(--muted);font-size:11px;margin-top:3px}.detail-panel{background:#fff;border:1px solid var(--border);border-radius:11px;padding:18px;box-shadow:var(--shadow)}
+@media(max-width:900px){.cards4,.simple-grid{grid-template-columns:1fr 1fr}}
+@media(max-width:600px){.cards4{grid-template-columns:1fr}.simple-grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="app">
+<aside class="sidebar">
+  <div class="logo"><div class="logo-mark">F</div> FleetFlow</div>
+  <div class="org"><small>ORGANIZATION</small><strong>Acme Logistics ▾</strong></div>
+  <div class="nav-label">Operations</div>
+  <div class="nav-item active">▦ <span>Command Center</span></div>
+  <div class="nav-item" onclick="toast('Opening shipments')">▣ <span data-ff-nav="shipments">Shipments</span><span class="count">13</span></div>
+  <div class="nav-item" onclick="toast('Opening live tracking')">⌖ <span>Live Tracking</span></div>
+  <div class="nav-item" onclick="toast('Opening routes')">↗ <span>Routes & Optimization</span></div>
+  <div class="nav-label">Fleet</div>
+  <div class="nav-item">◯ <span data-ff-nav="drivers">Drivers</span></div>
+  <div class="nav-item">▰ <span data-ff-nav="vehicles">Vehicles</span></div>
+  <div class="nav-item">⚙ <span>Maintenance</span></div>
+  <div class="nav-label">Business</div>
+  <div class="nav-item">▤ <span>Customers</span></div>
+  <div class="nav-item">◫ <span>Payments & Invoices</span></div>
+  <div class="nav-item">⌁ <span data-ff-nav="analytics">Analytics</span></div>
+  <div class="nav-label">Administration</div>
+  <div class="nav-item">♙ <span data-ff-nav="users">Users & Permissions</span></div>
+  <div class="nav-item">☷ <span data-ff-nav="audit">Audit Logs</span></div>
+  <div class="nav-item">⚙ <span data-ff-nav="settings">Settings</span></div>
+</aside>
+
+<main class="main">
+<header class="topbar">
+  <input class="search" placeholder="⌕  Search shipments, drivers, vehicles...">
+  <div class="top-actions"><span>Last updated: <b>12 sec ago</b></span><span>🔔</span><div class="avatar">AH</div></div>
+</header>
+
+<section class="content">
+  <div class="page-head">
+    <div><h1>Operations Command Center</h1><p>Real-time visibility across your fleet · Thursday, September 3</p></div>
+    <div class="actions"><button class="btn" onclick="toast('Report export started')">↓ Export report</button><button class="btn primary" onclick="openModal()">＋ New shipment</button></div>
+  </div>
+
+  <div class="live-strip">
+    <div class="stat"><div class="stat-label">Drivers online</div><div class="stat-value green">42</div><div class="stat-note green">● Live now</div></div>
+    <div class="stat"><div class="stat-label">Deliveries in transit</div><div class="stat-value blue">31</div><div class="stat-note">8 picked up today</div></div>
+    <div class="stat"><div class="stat-label">At-risk deliveries</div><div class="stat-value amber">7</div><div class="stat-note amber">Needs attention</div></div>
+    <div class="stat"><div class="stat-label">Offline drivers</div><div class="stat-value red">3</div><div class="stat-note red">2 mid-route</div></div>
+    <div class="stat"><div class="stat-label">Completed today</div><div class="stat-value">184</div><div class="stat-note green">↑ 8.2% vs yesterday</div></div>
+  </div>
+
+  <div class="grid-main">
+    <div class="panel">
+      <div class="panel-head"><div><div class="panel-title">Live Fleet</div><div class="panel-sub"><span class="live-dot"></span>42 vehicles reporting · updates every few seconds</div></div><button class="btn" onclick="toast('Map centered on fleet')">Fit fleet</button></div>
+      <div class="map">
+        <div class="map-status"><span class="live-dot"></span><b>LIVE</b> · 42 vehicles</div>
+        <div class="map-tools"><button>＋</button><button>−</button><button>⌖</button></div>
+        <div class="route r1"></div><div class="route r2"></div><div class="route r3"></div>
+        <div class="pin p1" title="Bilal Ahmed">🚚</div><div class="pin p2" title="Sana Riaz">🚚</div><div class="pin p3" title="Usman Tariq">🚚</div><div class="pin p4">🚚</div><div class="pin p5">🚚</div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-head"><div><div class="panel-title">Needs Attention</div><div class="panel-sub">10 active operational alerts</div></div></div>
+      <div class="alert-list">
+        <div class="alert critical"><div class="ico">!</div><div><strong>Driver offline mid-route</strong><p>Usman Tariq · FF-10293 · last seen 31 min ago</p><button onclick="toast('Opening driver recovery workflow')">Review & reassign →</button></div></div>
+        <div class="alert risk"><div class="ico">△</div><div><strong>3 deliveries may miss their window</strong><p>Highest risk: FF-10293 · +18 min ETA</p><button onclick="toast('Opening at-risk shipments')">Review deliveries →</button></div></div>
+        <div class="alert risk"><div class="ico">⚙</div><div><strong>2 vehicles due for maintenance</strong><p>VAN-019 and TRK-042 · service due soon</p><button onclick="toast('Opening maintenance')">Schedule service →</button></div></div>
+        <div class="alert critical"><div class="ico">×</div><div><strong>4 failed deliveries</strong><p>Require reassignment before 14:00</p><button onclick="toast('Opening failed deliveries')">Reassign →</button></div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="bottom-grid">
+    <div class="panel">
+      <div class="panel-head"><div><div class="panel-title">Active Deliveries</div><div class="panel-sub">Prioritized by operational risk</div></div><button class="btn">View all</button></div>
+      <table class="table">
+        <thead><tr><th>Shipment</th><th>Driver</th><th>Route</th><th>ETA</th><th>Status</th><th></th></tr></thead>
+        <tbody>
+          <tr><td><b>FF-10293</b><br><span style="color:#98a2b3">ABC Retail</span></td><td><div class="driver"><div class="mini-avatar">UT</div>Usman Tariq</div></td><td>Lahore → DHA</td><td class="red">+18 min</td><td><span class="badge amber">At risk</span></td><td><button class="btn" onclick="toast('Opening FF-10293')">View</button></td></tr>
+          <tr><td><b>FF-10291</b><br><span style="color:#98a2b3">Metro Store</span></td><td><div class="driver"><div class="mini-avatar">BA</div>Bilal Ahmed</div></td><td>Gulberg → Model Town</td><td>11 min</td><td><span class="badge green">On time</span></td><td><button class="btn" onclick="toast('Opening FF-10291')">View</button></td></tr>
+          <tr><td><b>FF-10288</b><br><span style="color:#98a2b3">TechMart</span></td><td><div class="driver"><div class="mini-avatar">SR</div>Sana Riaz</div></td><td>Johar Town → Cantt</td><td>24 min</td><td><span class="badge green">In transit</span></td><td><button class="btn" onclick="toast('Opening FF-10288')">View</button></td></tr>
+          <tr><td><b>FF-10286</b><br><span style="color:#98a2b3">Fresh Foods</span></td><td><div class="driver"><div class="mini-avatar">HK</div>Hamza Khan</div></td><td>Township → Bahria</td><td>38 min</td><td><span class="badge green">On time</span></td><td><button class="btn" onclick="toast('Opening FF-10286')">View</button></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="panel">
+      <div class="panel-head"><div><div class="panel-title">Live Activity</div><div class="panel-sub">Latest fleet events</div></div></div>
+      <div class="activity">
+        <div class="event"><div class="time">10:42</div><div class="event-icon">✓</div><div class="event-text"><strong>FF-10291 delivered</strong><p>Bilal Ahmed · POD captured successfully</p></div></div>
+        <div class="event"><div class="time">10:38</div><div class="event-icon">△</div><div class="event-text"><strong>FF-10293 became at risk</strong><p>ETA increased by 14 minutes</p></div></div>
+        <div class="event"><div class="time">10:31</div><div class="event-icon">⌖</div><div class="event-text"><strong>Sana entered delivery zone</strong><p>FF-10288 · customer notified</p></div></div>
+        <div class="event"><div class="time">10:27</div><div class="event-icon">!</div><div class="event-text"><strong>Driver went offline</strong><p>Usman Tariq · FF-10293</p></div></div>
+        <div class="event"><div class="time">10:19</div><div class="event-icon">✓</div><div class="event-text"><strong>FF-10288 picked up</strong><p>Driver accepted route successfully</p></div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="ai">
+    <div class="panel-head"><div class="ai-title"><div class="ai-mark">✦</div><div><div class="panel-title">FleetFlow Intelligence</div><div class="panel-sub">Operational insights based on your live fleet data</div></div></div><button class="btn">Ask AI</button></div>
+    <div class="ai-body">
+      <div class="ai-insight"><strong>Recommended action: recover FF-10293</strong><br>
+      Usman Tariq has been offline for 31 minutes while FF-10293 is already 18 minutes behind schedule. <b>Bilal Ahmed</b> is the nearest available driver with enough vehicle capacity. Reassigning now is estimated to reduce the delay to approximately <b>6 minutes</b>.</div>
+      <div class="ai-actions"><button onclick="toast('Opening reassignment workflow')">Reassign to Bilal</button><button onclick="toast('Opening shipment timeline')">View shipment timeline</button><button onclick="toast('AI explanation opened')">Why is this at risk?</button></div>
+    </div>
+  </div>
+</section>
+</main>
+</div>
+
+<div id="views" style="display:none">
+  <section class="view-page" data-view="Shipments"><div class="subnav-head"><div><h2>Shipments</h2><p>Manage the complete delivery lifecycle.</p></div><button class="btn primary" onclick="openModal()">＋ New shipment</button></div><div class="list-card"><div class="head">Active shipments</div><div class="list-row"><div><b>FF-10293</b><div class="muted">ABC Retail · Lahore → DHA</div></div><span class="badge amber">At risk</span><button class="btn sm" onclick="openShipment('FF-10293')">View</button></div><div class="list-row"><div><b>FF-10291</b><div class="muted">Metro Store · Gulberg → Model Town</div></div><span class="badge green">On time</span><button class="btn sm" onclick="openShipment('FF-10291')">View</button></div><div class="list-row"><div><b>FF-10288</b><div class="muted">TechMart · Johar Town → Cantt</div></div><span class="badge green">In transit</span><button class="btn sm" onclick="openShipment('FF-10288')">View</button></div></div></section>
+  <section class="view-page" data-view="Live Tracking"><div class="subnav-head"><div><h2>Live Tracking</h2><p>Monitor vehicles and active deliveries in real time.</p></div><button class="btn" onclick="showDashboard()">← Command Center</button></div><div class="panel"><div class="map" style="height:520px"><div class="map-status"><span class="live-dot"></span><b>LIVE</b> · 42 vehicles</div><div class="map-tools"><button onclick="zoomMap(1)">＋</button><button onclick="zoomMap(-1)">−</button><button onclick="toast('Location centered')">⌖</button></div><div class="route r1"></div><div class="route r2"></div><div class="route r3"></div><div class="pin p1">🚚</div><div class="pin p2">🚚</div><div class="pin p3">🚚</div><div class="pin p4">🚚</div><div class="pin p5">🚚</div></div></div></section>
+  <section class="view-page" data-view="Routes & Optimization"><div class="subnav-head"><div><h2>Routes & Optimization</h2><p>Plan routes, compare ETAs and reduce unnecessary mileage.</p></div><button class="btn primary" onclick="toast('Route optimization started')">Optimize routes</button></div><div class="cards4"><div class="stat"><div class="stat-label">Active routes</div><div class="stat-value">18</div></div><div class="stat"><div class="stat-label">Distance today</div><div class="stat-value">842 km</div></div><div class="stat"><div class="stat-label">Estimated saving</div><div class="stat-value green">14%</div></div><div class="stat"><div class="stat-label">Late-risk routes</div><div class="stat-value amber">3</div></div></div><div class="list-card"><div class="head">Recommended routes</div><div class="list-row"><div><b>Route R-018</b><div class="muted">8 stops · 74 km · 2h 10m</div></div><button class="btn sm" onclick="toast('Route R-018 opened')">Open route</button></div><div class="list-row"><div><b>Route R-021</b><div class="muted">6 stops · 52 km · 1h 42m</div></div><button class="btn sm" onclick="toast('Route R-021 opened')">Open route</button></div></div></section>
+  <section class="view-page" data-view="Drivers"><div class="subnav-head"><div><h2>Drivers</h2><p>Availability, assignments and driver performance.</p></div><button class="btn primary" onclick="toast('Add driver form opened')">＋ Add driver</button></div><div class="list-card"><div class="head">Driver roster</div><div class="list-row"><div><b>Bilal Ahmed</b><div class="muted">Online · 18 deliveries · 96% success</div></div><span class="badge green">Available</span><button class="btn sm" onclick="toast('Bilal Ahmed profile opened')">View</button></div><div class="list-row"><div><b>Sana Riaz</b><div class="muted">Online · 15 deliveries · 94% success</div></div><span class="badge green">On route</span><button class="btn sm" onclick="toast('Sana Riaz profile opened')">View</button></div><div class="list-row"><div><b>Usman Tariq</b><div class="muted">Offline · FF-10293 · last seen 31 min ago</div></div><span class="badge red">Offline</span><button class="btn sm" onclick="toast('Recovery workflow opened')">Recover</button></div></div></section>
+  <section class="view-page" data-view="Vehicles"><div class="subnav-head"><div><h2>Vehicles</h2><p>Fleet availability, capacity and utilization.</p></div><button class="btn primary" onclick="toast('Add vehicle form opened')">＋ Add vehicle</button></div><div class="list-card"><div class="head">Fleet</div><div class="list-row"><div><b>VAN-019</b><div class="muted">Van · 1,200 kg capacity</div></div><span class="badge amber">Maintenance due</span><button class="btn sm" onclick="toast('Maintenance details opened')">Details</button></div><div class="list-row"><div><b>TRK-042</b><div class="muted">Truck · 4,000 kg capacity</div></div><span class="badge amber">Maintenance due</span><button class="btn sm" onclick="toast('Maintenance details opened')">Details</button></div><div class="list-row"><div><b>VAN-023</b><div class="muted">Van · 1,000 kg capacity</div></div><span class="badge green">Available</span><button class="btn sm" onclick="toast('Vehicle details opened')">Details</button></div></div></section>
+  <section class="view-page" data-view="Maintenance"><div class="subnav-head"><div><h2>Maintenance</h2><p>Schedule service and prevent vehicle downtime.</p></div><button class="btn primary" onclick="toast('Maintenance schedule opened')">＋ Schedule service</button></div><div class="list-card"><div class="head">Upcoming maintenance</div><div class="list-row"><div><b>VAN-019</b><div class="muted">Oil service · Due in 180 km</div></div><span class="badge amber">Due soon</span><button class="btn sm" onclick="toast('Service scheduled for VAN-019')">Schedule</button></div><div class="list-row"><div><b>TRK-042</b><div class="muted">Brake inspection · Due in 2 days</div></div><span class="badge amber">Due soon</span><button class="btn sm" onclick="toast('Service scheduled for TRK-042')">Schedule</button></div></div></section>
+  <section class="view-page" data-view="Customers"><div class="subnav-head"><div><h2>Customers</h2><p>Customer accounts and delivery relationships.</p></div><button class="btn primary" onclick="toast('Add customer form opened')">＋ Add customer</button></div><div class="list-card"><div class="head">Customer accounts</div><div class="list-row"><div><b>ABC Retail</b><div class="muted">24 active shipments · PKR 1.2M outstanding</div></div><button class="btn sm" onclick="toast('ABC Retail opened')">View</button></div><div class="list-row"><div><b>Metro Store</b><div class="muted">11 active shipments · PKR 420K outstanding</div></div><button class="btn sm" onclick="toast('Metro Store opened')">View</button></div></div></section>
+  <section class="view-page" data-view="Payments & Invoices"><div class="subnav-head"><div><h2>Payments & Invoices</h2><p>Track payment status, invoices and collections.</p></div><button class="btn primary" onclick="toast('Invoice creation opened')">＋ Create invoice</button></div><div class="cards4"><div class="stat"><div class="stat-label">Collected today</div><div class="stat-value">PKR 284K</div></div><div class="stat"><div class="stat-label">Pending</div><div class="stat-value amber">PKR 720K</div></div><div class="stat"><div class="stat-label">Paid invoices</div><div class="stat-value green">184</div></div><div class="stat"><div class="stat-label">Failed payments</div><div class="stat-value red">4</div></div></div><div class="list-card"><div class="head">Recent invoices</div><div class="list-row"><div><b>INV-2048</b><div class="muted">ABC Retail · PKR 84,500</div></div><span class="badge green">Paid</span><button class="btn sm" onclick="toast('Invoice downloaded')">Download</button></div><div class="list-row"><div><b>INV-2047</b><div class="muted">Metro Store · PKR 42,000</div></div><span class="badge amber">Pending</span><button class="btn sm" onclick="toast('Payment reminder sent')">Remind</button></div></div></section>
+  <section class="view-page" data-view="Analytics"><div class="subnav-head"><div><h2>Analytics</h2><p>Operational performance and fleet intelligence.</p></div><button class="btn" onclick="toast('Analytics report exported')">↓ Export</button></div><div class="cards4"><div class="stat"><div class="stat-label">Delivery success</div><div class="stat-value green">94.6%</div></div><div class="stat"><div class="stat-label">Avg. delivery time</div><div class="stat-value">46m</div></div><div class="stat"><div class="stat-label">Fleet utilization</div><div class="stat-value blue">81%</div></div><div class="stat"><div class="stat-label">Failed deliveries</div><div class="stat-value red">4</div></div></div><div class="detail-panel"><b>Performance summary</b><p class="muted">Delivery completion is 8.2% higher than yesterday. Three routes are currently at risk and two vehicles require maintenance.</p><button class="btn" onclick="toast('Detailed analytics opened')">View detailed report</button></div></section>
+  <section class="view-page" data-view="Users & Permissions"><div class="subnav-head"><div><h2>Users & Permissions</h2><p>Manage organization access and role permissions.</p></div><button class="btn primary" onclick="toast('Invite user form opened')">＋ Invite user</button></div><div class="list-card"><div class="head">Team members</div><div class="list-row"><div><b>Ahmed Hassan</b><div class="muted">Admin · Full access</div></div><span class="badge green">Active</span><button class="btn sm" onclick="toast('User permissions opened')">Permissions</button></div><div class="list-row"><div><b>Usman Tariq</b><div class="muted">Driver · Delivery operations</div></div><span class="badge green">Active</span><button class="btn sm" onclick="toast('User permissions opened')">Permissions</button></div></div></section>
+  <section class="view-page" data-view="Audit Logs"><div class="subnav-head"><div><h2>Audit Logs</h2><p>Track important organization and operational actions.</p></div><button class="btn" onclick="toast('Audit log exported')">↓ Export logs</button></div><div class="list-card"><div class="head">Recent activity</div><div class="list-row"><div><b>Ahmed Hassan</b><div class="muted">Created shipment FF-10293</div></div><span class="muted">10:31</span></div><div class="list-row"><div><b>Dispatcher</b><div class="muted">Assigned FF-10291 to Bilal Ahmed</div></div><span class="muted">10:24</span></div><div class="list-row"><div><b>System</b><div class="muted">Payment webhook processed for INV-2048</div></div><span class="muted">10:18</span></div></div></section>
+  <section class="view-page" data-view="Settings"><div class="subnav-head"><div><h2>Settings</h2><p>Configure organization, notifications and operational preferences.</p></div><button class="btn primary" onclick="saveSettings()">Save changes</button></div><div class="detail-panel"><div class="list-row"><div><b>Delivery alerts</b><div class="muted">Notify dispatchers when deliveries become at risk.</div></div><div class="toggle on" onclick="this.classList.toggle('on')"><div class="knob"></div></div></div><div class="list-row"><div><b>Customer SMS notifications</b><div class="muted">Send pickup, arrival and delivery updates.</div></div><div class="toggle on" onclick="this.classList.toggle('on')"><div class="knob"></div></div></div><div class="list-row"><div><b>AI operational insights</b><div class="muted">Generate recommendations from fleet activity.</div></div><div class="toggle on" onclick="this.classList.toggle('on')"><div class="knob"></div></div></div></div></section>
+</div>
+<div class="modal-bg" id="modal">
+ <div class="modal">
+  <div class="modal-head"><b>Create Shipment</b><button class="btn" onclick="closeModal()">×</button></div>
+  <div class="modal-body">
+   <div class="form-grid">
+    <div class="field"><label>Customer</label><select><option>ABC Retail</option><option>Metro Store</option><option>TechMart</option></select></div>
+    <div class="field"><label>Priority</label><select><option>Standard</option><option>High</option><option>Critical</option></select></div>
+    <div class="field"><label>Pickup location</label><input placeholder="Warehouse / address"></div>
+    <div class="field"><label>Delivery location</label><input placeholder="Customer address"></div>
+    <div class="field"><label>Delivery window</label><input type="datetime-local"></div>
+    <div class="field"><label>Package weight</label><input placeholder="e.g. 25 kg"></div>
+   </div>
+  </div>
+  <div class="modal-foot"><button class="btn" onclick="closeModal()">Cancel</button><button class="btn primary" onclick="createShipment()">Create shipment</button></div>
+ </div>
+</div>
+<div class="toast" id="toast"></div>
+<script>
+const dashboard=document.querySelector('.content'); const views=document.getElementById('views');
+function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.style.display='block';clearTimeout(window.tt);window.tt=setTimeout(()=>t.style.display='none',2200)}
+function openModal(){document.getElementById('modal').style.display='flex'}
+function closeModal(){document.getElementById('modal').style.display='none'}
+function createShipment(){closeModal();toast('Shipment FF-10302 created successfully');}
+function showView(name){dashboard.style.display='none';views.style.display='block';document.querySelectorAll('.view-page').forEach(v=>v.classList.toggle('active',v.dataset.view===name));document.querySelectorAll('.nav-item').forEach(n=>n.classList.toggle('active',n.textContent.trim().startsWith(name)));window.scrollTo({top:0,behavior:'smooth'});}
+function showDashboard(){views.style.display='none';dashboard.style.display='block';document.querySelectorAll('.nav-item').forEach(n=>n.classList.toggle('active',n.textContent.includes('Command Center')));window.scrollTo({top:0,behavior:'smooth'});}
+function openShipment(id){toast('Opening shipment '+id);setTimeout(()=>showView('Shipments'),250)}
+function zoomMap(dir){toast(dir>0?'Map zoomed in':'Map zoomed out')}
+function saveSettings(){toast('Settings saved successfully')}
+const routeNames=['Command Center','Shipments','Live Tracking','Routes & Optimization','Drivers','Vehicles','Maintenance','Customers','Payments & Invoices','Analytics','Users & Permissions','Audit Logs','Settings'];
+document.querySelectorAll('.nav-item').forEach(item=>{const name=routeNames.find(n=>item.textContent.trim().startsWith(n));if(name)item.onclick=()=>name==='Command Center'?showDashboard():showView(name)});
+// Make top actions interactive
+document.querySelector('.top-actions span:last-of-type')?.addEventListener('click',()=>toast('3 unread notifications'));document.querySelector('.avatar')?.addEventListener('click',()=>toast('Profile menu opened'));
+// Make dashboard controls interactive
+document.querySelectorAll('.stat').forEach(stat=>{const label=stat.querySelector('.stat-label')?.textContent;stat.onclick=()=>{if(label==='At-risk deliveries')showView('Shipments');else if(label==='Offline drivers')showView('Drivers');else if(label==='Drivers online')showView('Drivers');else if(label==='Deliveries in transit')showView('Live Tracking');}});
+document.querySelectorAll('.map-tools button').forEach((b,i)=>b.onclick=()=>i===0?zoomMap(1):i===1?zoomMap(-1):toast('Fleet location centered'));
+</script>
+
+<style>
+#ff-page-layer{padding:0 28px 48px;max-width:1400px;margin:0 auto;width:100%}
+.ff-page{display:none}.ff-page.active{display:block}
+.ff-toolbar{display:flex;align-items:flex-end;justify-content:space-between;gap:20px;margin:4px 0 22px}
+.ff-toolbar h2{font-size:23px;margin:0;font-weight:700}.ff-toolbar p{margin:5px 0 0;color:var(--ink-2);font-size:13.5px}
+.ff-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;margin-bottom:18px}.ff-kpis{grid-template-columns:repeat(4,1fr)}
+.ff-card{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:18px}
+.ff-kpis .ff-card b{display:block;font-size:25px;margin-bottom:5px}.ff-kpis .ff-card span{color:var(--ink-2);font-size:12px}
+.ff-table{padding:0;overflow:hidden}.ff-table-head{display:flex;justify-content:space-between;align-items:center;padding:17px 18px;border-bottom:1px solid var(--line)}
+.ff-table-head input{padding:8px 10px;border:1px solid var(--line);border-radius:7px;font:inherit;font-size:12px}
+.ff-table table{width:100%;border-collapse:collapse}.ff-table th,.ff-table td{text-align:left;padding:13px 16px;border-bottom:1px solid var(--line-soft);font-size:12.5px}.ff-table th{font-size:11px;text-transform:uppercase;color:var(--ink-3);letter-spacing:.04em}.ff-table tr:last-child td{border-bottom:0}
+.ff-status{display:inline-block;padding:4px 8px;border-radius:20px;font-size:11px;font-weight:700}.ff-status.live{background:var(--green-soft);color:var(--green)}.ff-status.risk{background:var(--amber-soft);color:var(--amber)}.ff-status.done{background:var(--green-soft);color:var(--green)}
+.ff-route-map,.ff-live-map{height:390px;background:#e9eef5;border:1px solid var(--line);border-radius:12px;position:relative;overflow:hidden;margin-bottom:18px;background-image:linear-gradient(25deg,transparent 48%,rgba(90,110,140,.18) 49%,rgba(90,110,140,.18) 51%,transparent 52%),linear-gradient(145deg,transparent 48%,rgba(90,110,140,.12) 49%,rgba(90,110,140,.12) 51%,transparent 52%);background-size:170px 130px}
+.ff-map-lines{position:absolute;left:12%;top:55%;width:72%;height:4px;background:#4672db;transform:rotate(-13deg);box-shadow:0 0 0 8px rgba(70,114,219,.1)}
+.ff-pin,.ff-vehicle{position:absolute;border:0;border-radius:50%;width:34px;height:34px;display:grid;place-items:center;background:#fff;box-shadow:0 3px 10px #0002;font-weight:800;cursor:pointer}.p1{left:17%;top:67%}.p2{left:52%;top:43%}.p3{right:15%;top:28%}
+.ff-map-label{position:absolute;left:20px;top:20px;background:#fff;padding:9px 12px;border-radius:8px;font-size:12px;box-shadow:0 3px 10px #0001}.ff-live-dot{color:var(--green);font-size:12px;font-weight:700}
+.v1{left:31%;top:54%}.v2{left:68%;top:35%}.ff-track-card{position:absolute;right:20px;bottom:20px;background:#fff;padding:14px 16px;border-radius:10px;box-shadow:0 6px 20px #0002;font-size:12px;line-height:1.6}
+.ff-chart{height:270px;display:flex;flex-direction:column;justify-content:flex-end}.bars{height:190px;display:flex;align-items:flex-end;gap:14px;padding:0 20px;border-bottom:1px solid var(--line)}.bars i{flex:1;background:var(--blue);border-radius:5px 5px 0 0;min-width:18px}.chart-caption{padding-top:12px;color:var(--ink-2);font-size:12px}
+.ff-log>div{padding:16px 2px;border-bottom:1px solid var(--line-soft);font-size:13px}.ff-log>div:last-child{border-bottom:0}.ff-log small{display:block;color:var(--ink-3);margin-top:4px}
+.ff-settings{max-width:680px}.ff-settings label{display:block;font-size:12.5px;font-weight:600;padding:15px 0;border-bottom:1px solid var(--line-soft)}.ff-settings input:not([type=checkbox]),.ff-settings select{display:block;width:100%;margin-top:7px;padding:9px;border:1px solid var(--line);border-radius:7px;font:inherit}
+@media(max-width:850px){.ff-kpis{grid-template-columns:repeat(2,1fr)}.ff-grid{grid-template-columns:1fr}.ff-table{overflow-x:auto}.ff-table table{min-width:760px}}
+</style>
+<script>
+(function(){
+ const pageNames = {dashboard:'Operations Command Center',shipments:'Shipments',drivers:'Drivers',vehicles:'Vehicles',routes:'Routes',tracking:'Live Tracking',analytics:'Analytics',users:'Users & Permissions',audit:'Audit Logs',settings:'Settings'};
+ function showPage(page){
+   if(page==='dashboard'){
+     document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+     document.getElementById('ff-page-layer').style.display='none';
+   }else{
+     document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+     document.getElementById('ff-page-layer').style.display='block';
+     document.querySelectorAll('.ff-page').forEach(v=>v.classList.toggle('active',v.dataset.page===page));
+   }
+   document.querySelectorAll('[data-ff-nav]').forEach(n=>n.classList.toggle('active',n.dataset.ffNav===page));
+   const title=document.querySelector('.page-head h1');
+   if(title && pageNames[page]) title.textContent=pageNames[page];
+   history.replaceState(null,'','#/'+page);
+ }
+ window.ffNavigate=showPage;
+ window.ffAction=function(msg){
+   const t=document.getElementById('toast');
+   if(t){t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2200)}
+ };
+ window.ffFilter=function(input){
+   const table=input.closest('.ff-table').querySelector('tbody');
+   const q=input.value.toLowerCase();
+   [...table.rows].forEach(r=>r.style.display=r.textContent.toLowerCase().includes(q)?'':'none');
+ };
+ document.addEventListener('DOMContentLoaded',()=>{
+   // Make every existing sidebar/nav item resolve to a real page.
+   const aliases={
+    'dashboard':'dashboard','shipments':'shipments','drivers':'drivers','vehicles':'vehicles',
+    'routes':'routes','tracking':'tracking','analytics':'analytics','users':'users',
+    'users & permissions':'users','audit logs':'audit','settings':'settings'
+   };
+   document.querySelectorAll('a,button,.nav-item,.sidebar-item,[onclick]').forEach(el=>{
+     const text=(el.textContent||'').trim().toLowerCase().replace(/\s+/g,' ');
+     const key=aliases[text];
+     if(key && !el.dataset.ffBound){
+       el.dataset.ffBound='1'; el.dataset.ffNav=key;
+       el.removeAttribute('href');
+       el.onclick=function(e){e.preventDefault();ffNavigate(key)};
+     }
+   });
+   const hash=location.hash.replace('#/','');
+   showPage(pageNames[hash]?hash:'dashboard');
+ });
+ window.addEventListener('popstate',()=>showPage(location.hash.replace('#/','')||'dashboard'));
+})();
+</script>
+
+</body>
+</html>

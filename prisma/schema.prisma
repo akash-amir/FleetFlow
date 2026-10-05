@@ -1,0 +1,252 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  admin
+  dispatcher
+  driver
+}
+
+enum ShipmentStatus {
+  ready_for_dispatch
+  picked_up
+  in_transit
+  delivered
+  failed
+  cancelled
+}
+
+enum InvoiceStatus {
+  unpaid
+  partially_paid
+  paid
+}
+
+model User {
+  id            Int      @id @default(autoincrement())
+  fullName      String
+  email         String   @unique
+  passwordHash  String
+  role          Role
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+
+  driverProfile DriverProfile?
+  shipments     Shipment[] @relation("DriverShipments")
+  refreshTokens RefreshToken[]
+  statusChanges ShipmentStatusHistory[]
+  recordedPayments Payment[]
+}
+
+model RefreshToken {
+  id                Int       @id @default(autoincrement())
+  userId            Int
+  user              User      @relation(fields: [userId], references: [id])
+  tokenHash         String    @unique
+  familyId          String
+  expiresAt         DateTime
+  revokedAt         DateTime?
+  replacedByTokenId Int?
+  createdAt         DateTime  @default(now())
+
+  @@index([userId])
+  @@index([familyId])
+}
+
+model Vehicle {
+  id            Int      @id @default(autoincrement())
+  plateNumber   String   @unique
+  vehicleType   String?
+  capacityKg    Decimal?
+  isActive      Boolean  @default(true)
+
+  driverProfile DriverProfile?
+}
+
+model DriverProfile {
+  driverId            Int      @id
+  driver              User     @relation(fields: [driverId], references: [id])
+  vehicleId           Int?     @unique
+  vehicle             Vehicle? @relation(fields: [vehicleId], references: [id])
+  licenseNumber       String?
+  availabilityStatus  String   @default("available") // available, on_delivery, offline
+}
+
+model Customer {
+  id             Int      @id @default(autoincrement())
+  companyName    String
+  contactPerson  String?
+  email          String   @unique
+  phone          String?
+  createdAt      DateTime @default(now())
+
+  orders         Order[]
+  users          CustomerUser[]
+}
+
+model CustomerUser {
+  id            Int      @id @default(autoincrement())
+  customerId    Int
+  customer      Customer @relation(fields: [customerId], references: [id])
+  fullName      String
+  email         String   @unique
+  passwordHash  String?  // null until the invite is accepted
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+
+  refreshTokens CustomerRefreshToken[]
+  tokens        CustomerUserToken[]
+  createdOrders Order[]
+
+  @@index([customerId])
+}
+
+model CustomerRefreshToken {
+  id                Int          @id @default(autoincrement())
+  customerUserId    Int
+  customerUser      CustomerUser @relation(fields: [customerUserId], references: [id])
+  tokenHash         String       @unique
+  familyId          String
+  expiresAt         DateTime
+  revokedAt         DateTime?
+  replacedByTokenId Int?
+  createdAt         DateTime     @default(now())
+
+  @@index([customerUserId])
+  @@index([familyId])
+}
+
+enum CustomerUserTokenPurpose {
+  invite
+  password_reset
+}
+
+model CustomerUserToken {
+  id             Int                      @id @default(autoincrement())
+  customerUserId Int
+  customerUser   CustomerUser             @relation(fields: [customerUserId], references: [id])
+  tokenHash      String                   @unique
+  purpose        CustomerUserTokenPurpose
+  expiresAt      DateTime
+  usedAt         DateTime?
+  invalidatedAt  DateTime?
+  createdAt      DateTime                 @default(now())
+
+  @@index([customerUserId])
+}
+
+enum OrderStatus {
+  pending
+  processing
+  cancelled
+}
+
+model Order {
+  id                      Int           @id @default(autoincrement())
+  customerId              Int
+  customer                Customer      @relation(fields: [customerId], references: [id])
+  pickupAddress           String
+  deliveryAddress         String
+  itemDescription         String?
+  declaredAmount          Decimal?      @db.Decimal(10, 2)
+  deliveryFee             Decimal?      @db.Decimal(10, 2)
+  status                  OrderStatus   @default(pending)
+  createdByCustomerUserId Int?
+  createdByCustomerUser   CustomerUser? @relation(fields: [createdByCustomerUserId], references: [id])
+  createdAt               DateTime      @default(now())
+
+  shipment          Shipment?
+
+  @@index([customerId])
+  @@index([status])
+}
+
+model Shipment {
+  id            Int             @id @default(autoincrement())
+  orderId       Int             @unique
+  order         Order           @relation(fields: [orderId], references: [id])
+  driverId      Int?
+  driver        User?           @relation("DriverShipments", fields: [driverId], references: [id])
+  status        ShipmentStatus  @default(ready_for_dispatch)
+  pickedUpAt    DateTime?
+  deliveredAt   DateTime?
+  createdAt     DateTime        @default(now())
+
+  proofOfDelivery ProofOfDelivery?
+  invoice         Invoice?
+  statusHistory   ShipmentStatusHistory[]
+}
+
+model ShipmentStatusHistory {
+  id           Int             @id @default(autoincrement())
+  shipmentId   Int
+  shipment     Shipment        @relation(fields: [shipmentId], references: [id])
+  fromStatus   ShipmentStatus?
+  toStatus     ShipmentStatus
+  changedById  Int
+  changedBy    User            @relation(fields: [changedById], references: [id])
+  createdAt    DateTime        @default(now())
+
+  @@index([shipmentId])
+}
+
+model ProofOfDelivery {
+  id                Int      @id @default(autoincrement())
+  shipmentId        Int      @unique
+  shipment          Shipment @relation(fields: [shipmentId], references: [id])
+  photoUrl          String?
+  photoPublicId     String?
+  signatureUrl      String?
+  signaturePublicId String?
+  notes             String?
+  uploadedAt        DateTime @default(now())
+}
+
+model Invoice {
+  id            Int           @id @default(autoincrement())
+  shipmentId    Int           @unique
+  shipment      Shipment      @relation(fields: [shipmentId], references: [id])
+  // Backed by a Postgres SEQUENCE (invoice_number_seq — created by hand in
+  // the migration, see its migration.sql) rather than app-level MAX+1 or a
+  // manually tracked counter: nextval() hands out a value atomically under
+  // concurrency, so two invoices created in the same instant can never
+  // collide, skip, or duplicate a number, with zero locking in app code.
+  invoiceNumber String        @unique @default(dbgenerated("'INV-' || lpad(nextval('invoice_number_seq')::text, 6, '0')"))
+  amount        Decimal       @db.Decimal(10, 2)
+  currency      String        @default("usd") // app always sets this explicitly from DEFAULT_CURRENCY at creation time; the DB default is just a safety net
+  status        InvoiceStatus @default(unpaid)
+  dueDate       DateTime
+  paidAt        DateTime?
+  sentAt        DateTime?
+  createdAt     DateTime      @default(now())
+
+  payments      Payment[]
+
+  @@index([status])
+}
+
+model Payment {
+  id                       Int      @id @default(autoincrement())
+  invoiceId                Int
+  invoice                  Invoice  @relation(fields: [invoiceId], references: [id])
+  amountPaid               Decimal  @db.Decimal(10, 2)
+  method                   String   // stripe, cash, bank_transfer
+  reference                String?
+  recordedById             Int?
+  recordedBy               User?    @relation(fields: [recordedById], references: [id])
+  stripePaymentIntentId    String?  @unique
+  paidAt                   DateTime @default(now())
+
+  @@index([invoiceId])
+}
+
+model ProcessedWebhookEvent {
+  eventId       String   @id  // Stripe's event.id — used for idempotency
+  processedAt   DateTime @default(now())
+}

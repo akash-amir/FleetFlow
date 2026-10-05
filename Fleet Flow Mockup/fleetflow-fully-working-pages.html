@@ -1,0 +1,2085 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>FleetFlow — Logistics Operations Platform</title>
+<style>
+:root{
+ --bg:#f6f8fb;--surface:#fff;--border:#e4e8ef;--line:#eef1f5;
+ --text:#182230;--muted:#667085;--faint:#98a2b3;
+ --blue:#2563eb;--blue-soft:#eff6ff;--green:#16a34a;--green-soft:#ecfdf3;
+ --amber:#d97706;--amber-soft:#fffbeb;--red:#dc2626;--red-soft:#fef2f2;
+ --purple:#7c3aed;--purple-soft:#f5f3ff;--gray-soft:#f2f4f7;
+ --shadow:0 1px 2px rgba(16,24,40,.04),0 8px 24px rgba(16,24,40,.05);
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:14px/1.5 Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;-webkit-font-smoothing:antialiased}
+button,input,select,textarea{font:inherit;color:inherit}
+a{color:var(--blue);text-decoration:none}
+h1,h2,h3{margin:0}
+
+/* ---------- primitives ---------- */
+.btn{border:1px solid var(--border);background:#fff;padding:8px 13px;border-radius:8px;cursor:pointer;font-size:12.5px;font-weight:500;white-space:nowrap;display:inline-flex;align-items:center;gap:6px}
+.btn:hover{background:#f9fafb}
+.btn.primary{background:var(--blue);border-color:var(--blue);color:#fff}
+.btn.primary:hover{background:#1d4fd8}
+.btn.danger{color:var(--red);background:var(--red-soft);border-color:#fecaca}
+.btn.ghost{border-color:transparent;background:transparent;color:var(--blue);padding:4px 0}
+.btn.sm{padding:5px 9px;font-size:11.5px}
+.btn.block{width:100%;justify-content:center;padding:11px}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.badge{display:inline-block;padding:3px 8px;border-radius:20px;font-size:11px;font-weight:650;white-space:nowrap}
+.badge.green{background:var(--green-soft);color:var(--green)}
+.badge.blue{background:var(--blue-soft);color:var(--blue)}
+.badge.amber{background:var(--amber-soft);color:var(--amber)}
+.badge.red{background:var(--red-soft);color:var(--red)}
+.badge.gray{background:var(--gray-soft);color:var(--muted)}
+.badge.purple{background:var(--purple-soft);color:var(--purple)}
+.panel{background:var(--surface);border:1px solid var(--border);border-radius:11px;box-shadow:var(--shadow);overflow:hidden}
+.panel-head{padding:15px 18px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;gap:12px}
+.panel-title{font-weight:680;font-size:14px}
+.panel-sub{font-size:11.5px;color:var(--muted);margin-top:2px}
+.panel-body{padding:18px}
+.muted{color:var(--muted);font-size:12px}
+.faint{color:var(--faint)}
+.green{color:var(--green)}.amber{color:var(--amber)}.red{color:var(--red)}.blue{color:var(--blue)}
+.row{display:flex;align-items:center;gap:10px}
+.spread{display:flex;justify-content:space-between;align-items:center;gap:12px}
+.divide>*{border-bottom:1px solid var(--line)}
+.divide>*:last-child{border-bottom:0}
+
+/* ---------- shell ---------- */
+.app{display:flex;min-height:100vh}
+.sidebar{width:246px;background:#fff;border-right:1px solid var(--border);padding:18px 13px;position:fixed;inset:0 auto 0 0;overflow-y:auto;z-index:5}
+.logo{display:flex;align-items:center;gap:10px;padding:4px 10px 20px;font-weight:800;font-size:18px}
+.logo-mark{width:31px;height:31px;border-radius:9px;background:var(--blue);color:#fff;display:grid;place-items:center;font-size:15px}
+.org{background:#f8fafc;border:1px solid var(--border);border-radius:9px;padding:9px 10px;margin-bottom:18px;cursor:pointer}
+.org small{color:var(--faint);font-size:10px;letter-spacing:.05em}
+.org strong{display:block;font-size:13px;margin-top:2px}
+.nav-label{font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:#9aa4b2;padding:12px 10px 5px}
+.nav-item{height:37px;padding:0 10px;border-radius:8px;display:flex;align-items:center;gap:10px;color:#667085;font-size:13px;cursor:pointer;margin:1px 0}
+.nav-item:hover{background:#f6f8fb}
+.nav-item.active{background:var(--blue-soft);color:var(--blue);font-weight:640}
+.nav-item .count{margin-left:auto;background:var(--gray-soft);color:var(--muted);border-radius:20px;font-size:10px;padding:2px 7px;font-weight:650}
+.nav-item.active .count{background:var(--blue);color:#fff}
+.main{margin-left:246px;width:calc(100% - 246px);min-width:0}
+.topbar{height:60px;background:#fff;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:16px;padding:0 24px;position:sticky;top:0;z-index:4}
+.search{width:300px;max-width:38vw;border:1px solid var(--border);background:#f8fafc;border-radius:8px;padding:8px 12px;font-size:12.5px}
+.top-actions{display:flex;align-items:center;gap:14px;font-size:12px;color:var(--muted)}
+.avatar{width:33px;height:33px;border-radius:50%;background:#e9eef8;color:#3b5bdb;display:grid;place-items:center;font-weight:700;font-size:11.5px;cursor:pointer}
+.content{padding:24px;max-width:1480px;margin:auto}
+.page-head{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;margin-bottom:20px;flex-wrap:wrap}
+.page-head h1{font-size:23px;margin-bottom:4px}
+.page-head p{margin:0;color:var(--muted);font-size:13px}
+.actions{display:flex;gap:8px;flex-wrap:wrap}
+
+/* ---------- kpi ---------- */
+.kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:16px}
+.kpis.four{grid-template-columns:repeat(4,1fr)}
+.stat{background:#fff;border:1px solid var(--border);border-radius:10px;padding:14px 15px;box-shadow:var(--shadow)}
+.stat.clickable{cursor:pointer}
+.stat.clickable:hover{border-color:#cdd7e6}
+.stat-label{font-size:11.5px;color:var(--muted)}
+.stat-value{font-size:24px;font-weight:750;margin-top:4px;letter-spacing:-.02em}
+.stat-note{font-size:10.5px;margin-top:3px;color:var(--faint)}
+
+/* ---------- table ---------- */
+.table-wrap{overflow-x:auto}
+.table{width:100%;border-collapse:collapse;font-size:12.5px}
+.table th,.table td{text-align:left;padding:11px 16px;border-bottom:1px solid var(--line);vertical-align:middle}
+.table th{font-size:10.5px;text-transform:uppercase;color:var(--faint);letter-spacing:.04em;font-weight:650;background:#fcfdfe}
+.table tr:last-child td{border-bottom:0}
+.table tbody tr:hover{background:#fcfdff}
+.mini-avatar{width:27px;height:27px;border-radius:50%;background:#e9eef8;color:#3b5bdb;display:grid;place-items:center;font-size:9.5px;font-weight:700;flex:none}
+
+/* ---------- map ---------- */
+.map{height:430px;position:relative;background:#e8edf3;overflow:hidden;
+ background-image:linear-gradient(rgba(255,255,255,.8) 2px,transparent 2px),linear-gradient(90deg,rgba(255,255,255,.8) 2px,transparent 2px),linear-gradient(24deg,transparent 47.6%,#fff 47.6%,#fff 52.4%,transparent 52.4%),linear-gradient(-38deg,transparent 48%,#fff 48%,#fff 52%,transparent 52%);
+ background-size:74px 74px,74px 74px,100% 100%,100% 100%}
+.map.tall{height:520px}
+.map.short{height:240px}
+.route-line{position:absolute;height:4px;background:var(--blue);opacity:.7;transform-origin:left center;border-radius:10px;z-index:2}
+.pin{position:absolute;width:30px;height:30px;border-radius:50%;display:grid;place-items:center;background:#fff;border:2.5px solid var(--blue);box-shadow:0 4px 12px rgba(16,24,40,.18);z-index:3;font-size:14px;cursor:pointer;transition:left 1.9s linear,top 1.9s linear;transform:translate(-50%,-50%)}
+.pin.stale{border-color:var(--red);opacity:.8}
+.pin.stop{width:22px;height:22px;border-color:var(--faint);font-size:10px;transition:none}
+.map-status{position:absolute;top:13px;left:13px;background:#fff;border:1px solid var(--border);padding:7px 11px;border-radius:8px;z-index:4;font-size:11.5px;box-shadow:var(--shadow)}
+.map-tools{position:absolute;right:13px;top:13px;z-index:4;display:flex;flex-direction:column;gap:5px}
+.map-tools button{width:32px;height:32px;border:1px solid var(--border);background:#fff;border-radius:7px;cursor:pointer}
+.live-dot{display:inline-block;width:7px;height:7px;background:var(--green);border-radius:50%;margin-right:5px;animation:pulse 1.8s infinite}
+.live-dot.red{background:var(--red)}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+.map-card{position:absolute;right:13px;bottom:13px;background:#fff;border:1px solid var(--border);padding:12px 14px;border-radius:10px;box-shadow:var(--shadow);font-size:12px;z-index:4;max-width:235px}
+
+/* ---------- alerts / activity ---------- */
+.alert{display:flex;gap:11px;padding:13px 16px;border-bottom:1px solid var(--line)}
+.alert:last-child{border-bottom:0}
+.ico{width:27px;height:27px;border-radius:7px;display:grid;place-items:center;font-size:12px;flex:none}
+.alert.critical .ico{background:var(--red-soft);color:var(--red)}
+.alert.risk .ico{background:var(--amber-soft);color:var(--amber)}
+.alert.info .ico{background:var(--blue-soft);color:var(--blue)}
+.alert strong{font-size:12.5px;display:block}
+.alert p{margin:3px 0 0;font-size:11px;color:var(--muted);line-height:1.45}
+.event{display:flex;gap:12px;padding:12px 18px;border-bottom:1px solid var(--line)}
+.event:last-child{border-bottom:0}
+.event .time{font-size:10.5px;color:var(--faint);width:42px;flex:none;padding-top:2px}
+.event-icon{width:24px;height:24px;border-radius:50%;background:var(--gray-soft);display:grid;place-items:center;font-size:10px;flex:none}
+
+/* ---------- timeline ---------- */
+.timeline{list-style:none;margin:0;padding:4px 0 0}
+.timeline li{position:relative;padding:0 0 20px 26px;font-size:12.5px}
+.timeline li:before{content:"";position:absolute;left:4px;top:14px;bottom:-4px;width:2px;background:var(--line)}
+.timeline li:last-child:before{display:none}
+.timeline .dot{position:absolute;left:0;top:3px;width:10px;height:10px;border-radius:50%;background:#fff;border:2px solid var(--border)}
+.timeline li.done .dot{background:var(--green);border-color:var(--green)}
+.timeline li.current .dot{background:var(--blue);border-color:var(--blue);box-shadow:0 0 0 4px var(--blue-soft)}
+.timeline li.current b{color:var(--blue)}
+.timeline li.todo{color:var(--faint)}
+.timeline small{display:block;color:var(--faint);font-size:11px;margin-top:2px}
+
+/* ---------- forms ---------- */
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.field{min-width:0}
+.field.full{grid-column:1/-1}
+.field label{font-size:11.5px;color:var(--muted);display:block;margin-bottom:5px;font-weight:550}
+.field input,.field select,.field textarea{width:100%;padding:9px 11px;border:1px solid var(--border);border-radius:8px;background:#fff}
+.field .hint{font-size:11px;color:var(--faint);margin-top:4px}
+.toggle{width:38px;height:22px;border-radius:20px;background:#d0d5dd;position:relative;cursor:pointer;flex:none;transition:background .15s}
+.toggle .knob{position:absolute;top:3px;left:3px;width:16px;height:16px;border-radius:50%;background:#fff;box-shadow:0 1px 3px #0003;transition:left .15s}
+.toggle.on{background:var(--green)}
+.toggle.on .knob{left:19px}
+
+/* ---------- modal / wizard ---------- */
+.modal-bg{position:fixed;inset:0;background:rgba(16,24,40,.5);z-index:20;display:flex;align-items:center;justify-content:center;padding:20px}
+.modal{width:640px;max-width:100%;max-height:90vh;background:#fff;border-radius:13px;box-shadow:0 24px 70px rgba(16,24,40,.28);display:flex;flex-direction:column}
+.modal-head{padding:16px 20px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center}
+.modal-body{padding:20px;overflow-y:auto}
+.modal-foot{padding:14px 20px;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;gap:8px}
+.steps{display:flex;gap:5px;padding:12px 20px;border-bottom:1px solid var(--border);background:#fcfdfe;overflow-x:auto}
+.step{font-size:10.5px;padding:5px 9px;border-radius:20px;color:var(--faint);background:var(--gray-soft);white-space:nowrap}
+.step.active{background:var(--blue);color:#fff;font-weight:650}
+.step.done{background:var(--green-soft);color:var(--green)}
+.review-line{display:flex;justify-content:space-between;gap:16px;padding:9px 0;border-bottom:1px solid var(--line);font-size:12.5px}
+.review-line:last-child{border-bottom:0}
+.rec{border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:9px;cursor:pointer}
+.rec.sel{border-color:var(--blue);background:var(--blue-soft)}
+.rec .why{font-size:11px;color:var(--muted);margin-top:5px;line-height:1.5}
+
+/* ---------- states ---------- */
+.toast{position:fixed;right:22px;bottom:22px;background:#182230;color:#fff;padding:11px 15px;border-radius:9px;font-size:12.5px;z-index:40;box-shadow:0 10px 30px #0003;max-width:340px;opacity:0;transform:translateY(8px);pointer-events:none;transition:.18s}
+.toast.show{opacity:1;transform:none}
+.toast.err{background:#7f1d1d}
+.empty{padding:52px 20px;text-align:center;color:var(--muted)}
+.empty .mark{width:44px;height:44px;border-radius:12px;background:var(--gray-soft);display:grid;place-items:center;margin:0 auto 12px;font-size:19px}
+.empty h3{font-size:15px;margin-bottom:6px;color:var(--text)}
+.empty p{margin:0 0 14px;font-size:12.5px}
+.skel{background:linear-gradient(90deg,#eef1f5 25%,#f7f9fb 50%,#eef1f5 75%);background-size:200% 100%;animation:shine 1.3s infinite;border-radius:6px}
+@keyframes shine{0%{background-position:200% 0}100%{background-position:-200% 0}}
+.tabs{display:flex;gap:4px;border-bottom:1px solid var(--border);padding:0 18px;overflow-x:auto}
+.tab{padding:11px 12px;font-size:12.5px;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap}
+.tab.active{color:var(--blue);border-bottom-color:var(--blue);font-weight:640}
+
+/* ---------- layout grids ---------- */
+.grid-main{display:grid;grid-template-columns:minmax(0,1.7fr) minmax(290px,.8fr);gap:16px}
+.grid-2{display:grid;grid-template-columns:1.25fr .75fr;gap:16px;margin-top:16px}
+.grid-detail{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(280px,.85fr);gap:16px}
+.bars{height:180px;display:flex;align-items:flex-end;gap:12px;padding:16px 18px 0}
+.bars i{flex:1;background:var(--blue);border-radius:5px 5px 0 0;min-width:14px;opacity:.85}
+.bars-x{display:flex;gap:12px;padding:8px 18px 16px;font-size:10.5px;color:var(--faint)}
+.bars-x span{flex:1;text-align:center}
+
+/* ---------- login ---------- */
+.auth{min-height:100vh;display:grid;place-items:center;padding:24px;background:radial-gradient(circle at 50% 0%,#eef2ff,var(--bg) 55%)}
+.auth-card{width:430px;max-width:100%;background:#fff;border:1px solid var(--border);border-radius:14px;box-shadow:var(--shadow);padding:28px}
+.auth h1{font-size:20px;margin-bottom:5px}
+.demo-roles{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:14px}
+.demo-roles button{text-align:left;padding:10px 12px;border:1px solid var(--border);border-radius:9px;background:#fff;cursor:pointer}
+.demo-roles button:hover{border-color:var(--blue);background:var(--blue-soft)}
+.demo-roles b{display:block;font-size:12.5px;margin-bottom:2px}
+.demo-roles small{color:var(--muted);font-size:10.5px}
+.sep{display:flex;align-items:center;gap:10px;margin:20px 0 4px;color:var(--faint);font-size:11px}
+.sep:before,.sep:after{content:"";flex:1;height:1px;background:var(--border)}
+
+/* ---------- driver workspace ---------- */
+.btn.lg{padding:12px 20px;font-size:14px;border-radius:10px;font-weight:640}
+.btn.lg.go{background:var(--green);border-color:var(--green);color:#fff}
+.btn.lg.go:hover{background:#15803d}
+/* Sticky action bar: the driver's one obvious next step, always in reach. */
+.action-bar{position:sticky;bottom:0;background:#fff;border-top:1px solid var(--border);
+ padding:14px 18px;display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap}
+.action-bar .what{font-size:12.5px;color:var(--muted)}
+.job-card{background:#fff;border:1px solid var(--border);border-radius:11px;padding:16px;box-shadow:var(--shadow)}
+.job-card.next{border-color:var(--blue);box-shadow:0 0 0 3px var(--blue-soft),var(--shadow)}
+.job-card h3{font-size:15px;margin-bottom:2px}
+.job-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px}
+.addr{display:flex;gap:9px;padding:9px 0;font-size:12.5px}
+.addr .mk{width:20px;flex:none;text-align:center;color:var(--faint)}
+.sig-pad{border:1px dashed #cbd5e1;border-radius:10px;background:#fcfdfe;touch-action:none;width:100%;height:170px;display:block;cursor:crosshair}
+.photo-drop{border:1px dashed #cbd5e1;border-radius:10px;background:#fcfdfe;padding:26px;text-align:center;color:var(--muted);font-size:12.5px;cursor:pointer}
+.photo-drop:hover{border-color:var(--blue);background:var(--blue-soft)}
+.photo-drop.filled{border-style:solid;border-color:var(--green);background:var(--green-soft);color:var(--green)}
+.pod-req{display:flex;align-items:center;gap:7px;font-size:12px;padding:5px 0;color:var(--muted)}
+.pod-req.met{color:var(--green)}
+
+/* ---------- public tracking ---------- */
+.track-wrap{min-height:100vh;background:var(--bg);padding:24px 16px 60px}
+.track-inner{max-width:780px;margin:auto}
+.stepper{display:flex;padding:20px 18px 8px}
+.stepper .s{flex:1;text-align:center;position:relative;font-size:11px;color:var(--faint)}
+.stepper .s:before{content:"";position:absolute;top:9px;left:-50%;width:100%;height:2px;background:var(--line)}
+.stepper .s:first-child:before{display:none}
+.stepper .s .b{width:20px;height:20px;border-radius:50%;background:#fff;border:2px solid var(--border);margin:0 auto 7px;position:relative;z-index:1;display:grid;place-items:center;font-size:10px}
+.stepper .s.done{color:var(--green)}
+.stepper .s.done .b{background:var(--green);border-color:var(--green);color:#fff}
+.stepper .s.done:before{background:var(--green)}
+.stepper .s.current{color:var(--blue);font-weight:650}
+.stepper .s.current .b{border-color:var(--blue);box-shadow:0 0 0 4px var(--blue-soft)}
+.stepper .s.current:before{background:var(--green)}
+
+/* ---------- responsive ---------- */
+.menu-btn{display:none;width:34px;height:34px;border:1px solid var(--border);border-radius:8px;background:#fff;place-items:center;cursor:pointer}
+@media(max-width:1150px){.kpis{grid-template-columns:repeat(3,1fr)}.grid-main,.grid-2,.grid-detail{grid-template-columns:1fr}}
+@media(max-width:900px){.kpis.four{grid-template-columns:repeat(2,1fr)}.form-grid{grid-template-columns:1fr}}
+@media(max-width:760px){
+ .sidebar{transform:translateX(-100%);transition:transform .2s;box-shadow:0 0 40px #0002}
+ .sidebar.open{transform:none}
+ .main{margin-left:0;width:100%}
+ .content{padding:16px}
+ .kpis{grid-template-columns:1fr 1fr}
+ .search{display:none}
+ .menu-btn{display:grid}
+ .map{height:320px}
+}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<div id="overlay"></div>
+<div class="toast" id="toast"></div>
+<script>
+/* =====================================================================
+   FleetFlow interactive prototype
+   Single file, no build step, no backend. Everything below fakes what the
+   real NestJS API will do, so the workflows can be walked end to end.
+   ===================================================================== */
+
+/* ---------------------------------------------------------------- data */
+const DB = {
+  org: 'Acme Logistics',
+  drivers: [
+    {id:'DRV-01',name:'Bilal Ahmed',   init:'BA',phone:'+92 300 1112233',status:'on_route', vehicle:'VAN-023',deliveries:18,success:96,rating:4.8,load:2,dist:2.4,cap:1000},
+    {id:'DRV-02',name:'Sana Riaz',     init:'SR',phone:'+92 301 2223344',status:'on_route', vehicle:'VAN-031',deliveries:15,success:94,rating:4.7,load:1,dist:5.1,cap:1000},
+    {id:'DRV-03',name:'Usman Tariq',   init:'UT',phone:'+92 302 3334455',status:'offline',  vehicle:'VAN-019',deliveries:22,success:91,rating:4.5,load:1,dist:8.7,cap:1200},
+    {id:'DRV-04',name:'Hamza Khan',    init:'HK',phone:'+92 303 4445566',status:'available', vehicle:'TRK-042',deliveries:11,success:98,rating:4.9,load:0,dist:3.2,cap:4000},
+    {id:'DRV-05',name:'Ayesha Malik',  init:'AM',phone:'+92 304 5556677',status:'available', vehicle:'VAN-027',deliveries:9, success:97,rating:4.8,load:0,dist:6.8,cap:900},
+    {id:'DRV-06',name:'Faisal Iqbal',  init:'FI',phone:'+92 305 6667788',status:'break',    vehicle:'—',      deliveries:14,success:93,rating:4.6,load:0,dist:11.4,cap:0}
+  ],
+  vehicles: [
+    {id:'VAN-019',type:'Van',  cap:1200,status:'maintenance_due',odo:84210,service:'Oil service · due in 180 km',driver:'Usman Tariq'},
+    {id:'TRK-042',type:'Truck',cap:4000,status:'maintenance_due',odo:151980,service:'Brake inspection · due in 2 days',driver:'Hamza Khan'},
+    {id:'VAN-023',type:'Van',  cap:1000,status:'active',odo:41300,service:'Next service in 2,400 km',driver:'Bilal Ahmed'},
+    {id:'VAN-027',type:'Van',  cap:900, status:'idle',  odo:22750,service:'Next service in 4,100 km',driver:'Ayesha Malik'},
+    {id:'VAN-031',type:'Van',  cap:1000,status:'active',odo:63400,service:'Next service in 900 km',driver:'Sana Riaz'}
+  ],
+  customers: [
+    {id:'CUS-01',name:'ABC Retail',  contact:'Ahmed Khan',  phone:'+92 42 111 2222',active:24,outstanding:1200000},
+    {id:'CUS-02',name:'Metro Store', contact:'Zainab Ali',  phone:'+92 42 333 4444',active:11,outstanding:420000},
+    {id:'CUS-03',name:'TechMart',    contact:'Omar Sheikh', phone:'+92 42 555 6666',active:7, outstanding:180000},
+    {id:'CUS-04',name:'Fresh Foods', contact:'Nadia Hussain',phone:'+92 42 777 8888',active:15,outstanding:640000}
+  ],
+  shipments: [
+    {id:'FF-10293',customer:'ABC Retail', from:'Lahore Central Warehouse',to:'DHA Phase 5, Lahore',driver:'DRV-03',vehicle:'VAN-019',
+     status:'in_transit',priority:'High',weight:'240 kg',window:'13:00 – 15:00',eta:'+18 min',lateRisk:78,amount:84500,
+     payment:'pending',pod:null,created:'09:12',
+     history:[['created','09:12','Ahmed Hassan'],['assigned','09:20','Dispatcher'],['accepted','09:24','Usman Tariq'],['picked_up','09:51','Usman Tariq'],['in_transit','10:02','System']]},
+    {id:'FF-10296',customer:'Fresh Foods',from:'Lahore Central Warehouse',to:'Bahria Town, Lahore',driver:'DRV-01',vehicle:'VAN-023',
+     status:'in_transit',priority:'Standard',weight:'120 kg',window:'12:00 – 14:00',eta:'24 min',lateRisk:14,amount:38000,
+     payment:'pending',pod:null,created:'09:40',
+     history:[['created','09:40','Ahmed Hassan'],['assigned','09:44','Dispatcher'],['accepted','09:47','Bilal Ahmed'],['picked_up','10:11','Bilal Ahmed'],['in_transit','10:19','System']]},
+    {id:'FF-10295',customer:'Metro Store',from:'Gulberg Depot',to:'Model Town, Lahore',driver:'DRV-01',vehicle:'VAN-023',
+     status:'assigned',priority:'High',weight:'85 kg',window:'14:00 – 16:00',eta:'—',lateRisk:22,amount:42000,
+     payment:'pending',pod:null,created:'10:22',
+     history:[['created','10:22','Ahmed Hassan'],['assigned','10:25','Dispatcher']]},
+    {id:'FF-10288',customer:'TechMart',   from:'Johar Town Hub',to:'Cantt, Lahore',driver:'DRV-02',vehicle:'VAN-031',
+     status:'arriving',priority:'Standard',weight:'60 kg',window:'11:00 – 13:00',eta:'6 min',lateRisk:9,amount:26500,
+     payment:'pending',pod:null,created:'08:50',
+     history:[['created','08:50','Ahmed Hassan'],['assigned','08:55','Dispatcher'],['accepted','08:58','Sana Riaz'],['picked_up','09:30','Sana Riaz'],['in_transit','09:38','System'],['arriving','10:31','System']]},
+    {id:'FF-10286',customer:'Fresh Foods',from:'Township Depot',to:'Bahria Town, Lahore',driver:'DRV-04',vehicle:'TRK-042',
+     status:'accepted',priority:'Standard',weight:'1,400 kg',window:'15:00 – 18:00',eta:'—',lateRisk:11,amount:96000,
+     payment:'pending',pod:null,created:'10:05',
+     history:[['created','10:05','Ahmed Hassan'],['assigned','10:08','Dispatcher'],['accepted','10:12','Hamza Khan']]},
+    {id:'FF-10284',customer:'ABC Retail', from:'Lahore Central Warehouse',to:'Garden Town, Lahore',driver:null,vehicle:null,
+     status:'created',priority:'Standard',weight:'45 kg',window:'16:00 – 18:00',eta:'—',lateRisk:0,amount:18000,
+     payment:'pending',pod:null,created:'10:34',
+     history:[['created','10:34','Ahmed Hassan']]},
+    {id:'FF-10280',customer:'Metro Store',from:'Gulberg Depot',to:'Iqbal Town, Lahore',driver:'DRV-02',vehicle:'VAN-031',
+     status:'failed',priority:'Standard',weight:'30 kg',window:'09:00 – 11:00',eta:'—',lateRisk:100,amount:15000,
+     payment:'pending',pod:null,created:'08:10',
+     history:[['created','08:10','Ahmed Hassan'],['assigned','08:14','Dispatcher'],['accepted','08:16','Sana Riaz'],['picked_up','08:40','Sana Riaz'],['in_transit','08:47','System'],['failed','09:55','Sana Riaz · receiver unavailable']]},
+    {id:'FF-10291',customer:'Metro Store',from:'Gulberg Depot',to:'Model Town, Lahore',driver:'DRV-01',vehicle:'VAN-023',
+     status:'delivered',priority:'Standard',weight:'75 kg',window:'09:00 – 11:00',eta:'—',lateRisk:0,amount:42000,
+     payment:'paid',created:'08:02',
+     pod:{receiver:'Ahmed Khan',time:'10:42',gps:'31.5204, 74.3587',photo:true,sig:true,notes:'Left at reception desk.'},
+     history:[['created','08:02','Ahmed Hassan'],['assigned','08:06','Dispatcher'],['accepted','08:09','Bilal Ahmed'],['picked_up','08:35','Bilal Ahmed'],['in_transit','08:44','System'],['arriving','10:28','System'],['delivered','10:42','Bilal Ahmed']]},
+    {id:'FF-10278',customer:'TechMart',   from:'Johar Town Hub',to:'Faisal Town, Lahore',driver:'DRV-03',vehicle:'VAN-019',
+     status:'delivered',priority:'Standard',weight:'55 kg',window:'08:00 – 10:00',eta:'—',lateRisk:0,amount:31000,
+     payment:'paid',created:'07:30',
+     pod:{receiver:'Omar Sheikh',time:'09:18',gps:'31.5100, 74.3200',photo:true,sig:true,notes:''},
+     history:[['created','07:30','Ahmed Hassan'],['assigned','07:34','Dispatcher'],['accepted','07:36','Usman Tariq'],['picked_up','08:01','Usman Tariq'],['in_transit','08:10','System'],['arriving','09:05','System'],['delivered','09:18','Usman Tariq']]}
+  ],
+  invoices: [
+    {id:'INV-2048',customer:'ABC Retail', shipment:'FF-10291',amount:42000,status:'paid',    date:'Sep 3'},
+    {id:'INV-2047',customer:'Metro Store',shipment:'FF-10278',amount:31000,status:'pending', date:'Sep 3'},
+    {id:'INV-2046',customer:'TechMart',   shipment:'FF-10288',amount:26500,status:'paid',    date:'Sep 2'},
+    {id:'INV-2045',customer:'Fresh Foods',shipment:'FF-10286',amount:96000,status:'failed',  date:'Sep 2'},
+    {id:'INV-2044',customer:'ABC Retail', shipment:'FF-10284',amount:18000,status:'refunded',date:'Sep 1'}
+  ],
+  users: [
+    {name:'Ahmed Hassan', email:'ahmed@acme.com', role:'admin',      status:'active'},
+    {name:'Sara Nawaz',   email:'sara@acme.com',  role:'dispatcher', status:'active'},
+    {name:'Bilal Ahmed',  email:'bilal@acme.com', role:'driver',     status:'active'},
+    {name:'Usman Tariq',  email:'usman@acme.com', role:'driver',     status:'active'},
+    {name:'Zainab Ali',   email:'zainab@abc.com', role:'client',     status:'invited'}
+  ],
+  audit: [
+    ['10:34','Ahmed Hassan','Created shipment','FF-10284'],
+    ['10:25','Sara Nawaz','Assigned shipment to Bilal Ahmed','FF-10295'],
+    ['10:19','System','Status changed to in_transit','FF-10296'],
+    ['10:18','System','Stripe webhook processed (payment_intent.succeeded)','INV-2048'],
+    ['10:12','Hamza Khan','Accepted shipment','FF-10286'],
+    ['09:55','Sana Riaz','Marked delivery failed · receiver unavailable','FF-10280'],
+    ['08:31','Ahmed Hassan','Updated role permissions for Sara Nawaz','USR-02'],
+    ['08:02','Ahmed Hassan','Logged in','—']
+  ],
+  activity: [
+    ['10:42','ok','FF-10291 delivered','Bilal Ahmed · POD captured'],
+    ['10:38','risk','FF-10293 flagged at risk','ETA increased by 14 minutes'],
+    ['10:31','info','Sana entered delivery zone','FF-10288 · customer notified'],
+    ['10:27','crit','Driver went offline','Usman Tariq · FF-10293'],
+    ['10:19','info','FF-10296 picked up','Bilal Ahmed accepted route'],
+    ['10:18','ok','Payment received','INV-2048 · PKR 42,000']
+  ]
+};
+
+/* ------------------------------------------------- shipment state machine */
+// The one rule the backend must own: which status can follow which.
+const FLOW = {
+  created:   ['assigned','cancelled'],
+  assigned:  ['accepted','cancelled'],
+  accepted:  ['picked_up','cancelled'],
+  picked_up: ['in_transit'],
+  in_transit:['arriving','failed'],
+  arriving:  ['delivered','failed'],
+  delivered: [],
+  failed:    ['assigned','returned'],
+  returned:  [],
+  cancelled: []
+};
+const ST = {
+  created:{l:'Created',c:'gray'}, assigned:{l:'Assigned',c:'blue'}, accepted:{l:'Accepted',c:'blue'},
+  picked_up:{l:'Picked up',c:'blue'}, in_transit:{l:'In transit',c:'blue'}, arriving:{l:'Arriving',c:'blue'},
+  delivered:{l:'Delivered',c:'green'}, failed:{l:'Failed delivery',c:'red'},
+  returned:{l:'Returned',c:'gray'}, cancelled:{l:'Cancelled',c:'gray'}
+};
+const HAPPY = ['created','assigned','accepted','picked_up','in_transit','arriving','delivered'];
+
+/* ------------------------------------------------------------ RBAC demo */
+const PERMS = {
+  admin:      ['*'],
+  dispatcher: ['dashboard','shipments','shipment','tracking','routes','drivers','driver','vehicles','maintenance','customers','new'],
+  driver:     ['jobs','job','pod','droute','history','dprofile'],
+  client:     ['client','invoices','profile']
+};
+const HOME = {admin:'dashboard',dispatcher:'dashboard',driver:'jobs',client:'client'};
+const can = (role,page) => PERMS[role].includes('*') || PERMS[role].includes(page);
+
+/* --------------------------------------------------------------- state */
+const S = {
+  user:null,            // {name, init, role, driverId?, customer?}
+  wizard:null,          // multi-step shipment draft
+  podDraft:null,        // proof-of-delivery draft
+  filter:'',
+  tab:'all',
+  loading:false,
+  tick:0
+};
+
+/* ------------------------------------------------------------- helpers */
+const $  = (s,r=document)=>r.querySelector(s);
+const $$ = (s,r=document)=>[...r.querySelectorAll(s)];
+const esc = s => String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const money = n => 'PKR ' + n.toLocaleString('en-US');
+const driver = id => DB.drivers.find(d=>d.id===id) || null;
+const ship   = id => DB.shipments.find(s=>s.id===id) || null;
+const badge  = st => `<span class="badge ${ST[st].c}">${ST[st].l}</span>`;
+const now    = () => new Date().toTimeString().slice(0,5);
+const go     = p => { location.hash = '#/' + p; };
+
+function toast(msg,isErr){
+  const t=$('#toast');
+  t.textContent=msg;
+  t.classList.toggle('err',!!isErr);
+  t.classList.add('show');
+  clearTimeout(window._tt);
+  window._tt=setTimeout(()=>t.classList.remove('show'),2600);
+}
+
+function audit(actor,action,entity){
+  DB.audit.unshift([now(),actor,action,entity]);
+}
+
+/* Backend-shaped guard: the only way a shipment status ever changes. */
+function advance(id,next,actor,extra){
+  const s = ship(id);
+  if(!s) return toast('Shipment not found',1), false;
+  if(!FLOW[s.status].includes(next)){
+    toast(`Cannot go from "${ST[s.status].l}" to "${ST[next].l}". Allowed: ${FLOW[s.status].map(x=>ST[x].l).join(', ')||'nothing, this shipment is final'}`,1);
+    return false;
+  }
+  if(next==='delivered' && !s.pod){
+    toast('Delivered requires a completed proof of delivery (receiver, signature, photo).',1);
+    return false;
+  }
+  s.status = next;
+  s.history.push([next, now(), actor + (extra?' · '+extra:'')]);
+  audit(actor,'Status changed to '+next,id);
+  DB.activity.unshift([now(), next==='delivered'?'ok':next==='failed'?'crit':'info', `${id} → ${ST[next].l}`, actor]);
+  if(next==='delivered'){
+    s.payment='paid';
+    DB.invoices.unshift({id:'INV-'+(2049+DB.invoices.length),customer:s.customer,shipment:s.id,amount:s.amount,status:'paid',date:'Sep 3'});
+    toast(`${id} delivered. Invoice generated, customer notified, analytics updated.`);
+  } else {
+    toast(`${id} → ${ST[next].l}`);
+  }
+  render();
+  return true;
+}
+</script>
+
+<script>
+/* ================================================================ SHELL */
+const NAV = [
+ ['Operations',   [['dashboard','▦','Command Center'],['shipments','▣','Shipments'],['tracking','⌖','Live Tracking'],['routes','↗','Routes & Optimization']]],
+ ['Fleet',        [['drivers','◯','Drivers'],['vehicles','▰','Vehicles'],['maintenance','⚙','Maintenance']]],
+ ['Business',     [['customers','▤','Customers'],['payments','◫','Payments & Invoices'],['analytics','⌁','Analytics']]],
+ ['Administration',[['users','♙','Users & Permissions'],['audit','☷','Audit Logs'],['settings','⚙','Settings']]]
+];
+
+// Live vehicle positions (%). The sim in the last script block moves these.
+const FLEET = [
+ {v:'VAN-019',d:'DRV-03',s:'FF-10293',x:22,y:56,vx:0,   vy:0,   stale:true},
+ {v:'VAN-023',d:'DRV-01',s:'FF-10296',x:38,y:44,vx:.5,  vy:-.22},
+ {v:'VAN-031',d:'DRV-02',s:'FF-10288',x:64,y:36,vx:-.34, vy:.28},
+ {v:'TRK-042',d:'DRV-04',s:'FF-10286',x:30,y:70,vx:.28, vy:.16},
+ {v:'VAN-027',d:'DRV-05',s:null,      x:76,y:26,vx:-.4, vy:.12}
+];
+
+function shell(page, body){
+  const u = S.user;
+  const cfg = u.role==='client' ? CLIENT_NAV : u.role==='driver' ? DRIVER_NAV : NAV;
+  const nav = cfg.map(([label,items])=>{
+    const visible = items.filter(([k])=>can(u.role,k));
+    if(!visible.length) return '';
+    return `<div class="nav-label">${label}</div>` + visible.map(([k,ico,name])=>{
+      const n = k==='shipments' ? DB.shipments.filter(s=>!['delivered','cancelled','returned'].includes(s.status)).length : null;
+      return `<div class="nav-item ${page===k?'active':''}" onclick="go('${k}')">${ico}<span>${name}</span>${n?`<span class="count">${n}</span>`:''}</div>`;
+    }).join('');
+  }).join('');
+
+  return `<div class="app">
+  <aside class="sidebar" id="sidebar">
+    <div class="logo"><div class="logo-mark">F</div>FleetFlow</div>
+    <div class="org" onclick="toast('Organization switcher — Acme Logistics is the only tenant in this demo')">
+      <small>ORGANIZATION</small><strong>${esc(DB.org)} ▾</strong>
+    </div>
+    ${nav}
+  </aside>
+  <main class="main">
+    <header class="topbar">
+      <div class="row">
+        <button class="menu-btn" onclick="$('#sidebar').classList.toggle('open')">☰</button>
+        <input class="search" placeholder="Search shipments, drivers, vehicles…" onkeydown="if(event.key==='Enter'){go('shipments');setTimeout(()=>{const i=$('#flt');if(i){i.value=this.value;filterList(this.value)}},30)}">
+      </div>
+      <div class="top-actions">
+        <span class="badge purple">${u.role.toUpperCase()}</span>
+        <span>Updated <b id="agoLbl">just now</b></span>
+        <span style="cursor:pointer" onclick="toast('3 unread notifications')">🔔</span>
+        <div class="avatar" onclick="logout()" title="Sign out">${u.init}</div>
+      </div>
+    </header>
+    <section class="content">${body}</section>
+  </main>
+</div>`;
+}
+
+function pageHead(title,sub,actions){
+  return `<div class="page-head"><div><h1>${title}</h1><p>${sub}</p></div><div class="actions">${actions||''}</div></div>`;
+}
+
+function mapHTML(cls,pins,card){
+  const list = (pins||FLEET);
+  return `<div class="map ${cls||''}" id="map">
+    <div class="map-status"><span class="live-dot"></span><b>LIVE</b> · ${list.length} vehicles reporting</div>
+    <div class="map-tools">
+      <button onclick="toast('Zoomed in')">＋</button>
+      <button onclick="toast('Zoomed out')">−</button>
+      <button onclick="toast('Centred on fleet')">⌖</button>
+    </div>
+    <div class="route-line" style="width:270px;left:16%;top:58%;transform:rotate(-19deg)"></div>
+    <div class="route-line" style="width:215px;left:48%;top:38%;transform:rotate(34deg)"></div>
+    <div class="route-line" style="width:180px;left:33%;top:64%;transform:rotate(24deg)"></div>
+    <div class="pin stop" style="left:16%;top:58%" title="Pickup">◉</div>
+    <div class="pin stop" style="left:86%;top:22%" title="Delivery">⚑</div>
+    ${list.map(f=>{
+      const d = driver(f.d);
+      return `<div class="pin ${f.stale?'stale':''}" data-v="${f.v}" style="left:${f.x}%;top:${f.y}%"
+        title="${esc(d?d.name:f.v)}${f.s?' · '+f.s:''}"
+        onclick="toast('${esc(d?d.name:f.v)} · ${f.v}${f.stale?' · GPS stale, last fix 31 min ago':' · live'}')">🚚</div>`;
+    }).join('')}
+    ${card||''}
+  </div>`;
+}
+
+/* ================================================================ LOGIN */
+function renderLogin(){
+  return `<div class="auth"><div class="auth-card">
+    <div class="logo" style="padding:0 0 18px"><div class="logo-mark">F</div>FleetFlow</div>
+    <h1>Sign in</h1>
+    <p class="muted" style="margin:0 0 20px">One login for the whole platform. Your role decides what you see next.</p>
+    <div class="field" style="margin-bottom:12px"><label>Work email</label><input id="email" value="ahmed@acme.com"></div>
+    <div class="field" style="margin-bottom:16px"><label>Password</label><input id="pw" type="password" value="demo1234"></div>
+    <button class="btn primary block" onclick="login('admin')">Sign in</button>
+    <div class="muted" style="text-align:center;margin-top:12px"><a href="#" onclick="toast('Password reset email sent');return false">Forgot password?</a></div>
+    <div class="sep">or explore a role</div>
+    <div class="demo-roles">
+      <button onclick="login('admin')"><b>Admin</b><small>Full organization access</small></button>
+      <button onclick="login('dispatcher')"><b>Dispatcher</b><small>Operations only — no billing</small></button>
+      <button onclick="login('driver')"><b>Driver</b><small>Mobile delivery app</small></button>
+      <button onclick="login('client')"><b>Client</b><small>Customer portal</small></button>
+    </div>
+    <p class="muted" style="margin-top:18px;text-align:center;font-size:11.5px">
+      Public tracking needs no account →
+      <a href="#/track/FF-10293">fleetflow.com/track/FF-10293</a>
+    </p>
+  </div></div>`;
+}
+
+const IDENTITY = {
+  admin:      {name:'Ahmed Hassan',init:'AH',role:'admin'},
+  dispatcher: {name:'Sara Nawaz',  init:'SN',role:'dispatcher'},
+  driver:     {name:'Bilal Ahmed', init:'BA',role:'driver',driverId:'DRV-01'},
+  client:     {name:'Zainab Ali',  init:'ZA',role:'client',customer:'Metro Store'}
+};
+function login(role){
+  S.user = IDENTITY[role];
+  audit(S.user.name,'Logged in','—');
+  toast(`Signed in as ${S.user.name} (${role})`);
+  go(HOME[role]);
+}
+function logout(){ S.user=null; go('login'); toast('Signed out'); }
+
+/* ============================================================ DASHBOARD */
+function renderDashboard(){
+  const active = DB.shipments.filter(s=>['assigned','accepted','picked_up','in_transit','arriving'].includes(s.status));
+  const risky  = active.filter(s=>s.lateRisk>=50);
+  const online = DB.drivers.filter(d=>d.status!=='offline').length;
+  const offline= DB.drivers.filter(d=>d.status==='offline').length;
+  const done   = DB.shipments.filter(s=>s.status==='delivered').length;
+  const maint  = DB.vehicles.filter(v=>v.status==='maintenance_due').length;
+  const failed = DB.shipments.filter(s=>s.status==='failed').length;
+
+  const kpi = (label,val,note,cls,target)=>`<div class="stat clickable" onclick="go('${target}')">
+    <div class="stat-label">${label}</div><div class="stat-value ${cls||''}">${val}</div><div class="stat-note">${note}</div></div>`;
+
+  return pageHead('Operations Command Center',
+      'Real-time visibility across your fleet · Thursday, 3 September',
+      `<button class="btn" onclick="toast('Report export queued — a BullMQ job would build this')">↓ Export report</button>
+       <button class="btn primary" onclick="openWizard()">＋ New shipment</button>`)
+  + `<div class="kpis">
+      ${kpi('Drivers online',online,'● Live now','green','drivers')}
+      ${kpi('Deliveries in transit',active.length,`${done} completed today`,'blue','tracking')}
+      ${kpi('At-risk deliveries',risky.length,'Needs attention','amber','shipments')}
+      ${kpi('Offline drivers',offline,offline?'1 mid-route':'All reporting','red','drivers')}
+      ${kpi('Vehicles due service',maint,'Schedule before Friday','amber','maintenance')}
+    </div>
+
+  <div class="grid-main">
+    <div class="panel">
+      <div class="panel-head">
+        <div><div class="panel-title">Live Fleet</div>
+        <div class="panel-sub"><span class="live-dot"></span>${FLEET.length} vehicles · GPS every 2 seconds</div></div>
+        <button class="btn" onclick="go('tracking')">Open tracking</button>
+      </div>
+      ${mapHTML('', FLEET, `<div class="map-card">
+        <b>FF-10293</b> · Usman Tariq<br>
+        <span class="red">⚠ Location delayed</span><br>
+        <span class="muted">Last fix 31 min ago</span>
+      </div>`)}
+    </div>
+
+    <div class="panel">
+      <div class="panel-head"><div><div class="panel-title">Needs Attention</div>
+        <div class="panel-sub">${risky.length+maint+failed+offline} open operational alerts</div></div></div>
+      <div>
+        <div class="alert critical"><div class="ico">!</div><div>
+          <strong>Driver offline mid-route</strong>
+          <p>Usman Tariq · FF-10293 · last GPS fix 31 min ago</p>
+          <button class="btn ghost" onclick="go('shipment/FF-10293')">Review &amp; reassign →</button></div></div>
+        <div class="alert risk"><div class="ico">△</div><div>
+          <strong>${risky.length} deliveries may miss their window</strong>
+          <p>Highest risk: FF-10293 · ETA +18 min · 78% late risk</p>
+          <button class="btn ghost" onclick="go('shipments')">Review deliveries →</button></div></div>
+        <div class="alert risk"><div class="ico">⚙</div><div>
+          <strong>${maint} vehicles due for maintenance</strong>
+          <p>VAN-019 and TRK-042 · service window closing</p>
+          <button class="btn ghost" onclick="go('maintenance')">Schedule service →</button></div></div>
+        <div class="alert critical"><div class="ico">×</div><div>
+          <strong>${failed} failed delivery needs reassignment</strong>
+          <p>FF-10280 · receiver unavailable at 09:55</p>
+          <button class="btn ghost" onclick="go('shipment/FF-10280')">Reassign →</button></div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid-2">
+    <div class="panel">
+      <div class="panel-head"><div><div class="panel-title">Active Deliveries</div>
+        <div class="panel-sub">Ordered by operational risk</div></div>
+        <button class="btn" onclick="go('shipments')">View all</button></div>
+      <div class="table-wrap"><table class="table">
+        <thead><tr><th>Shipment</th><th>Driver</th><th>Route</th><th>ETA</th><th>Status</th><th></th></tr></thead>
+        <tbody>${active.sort((a,b)=>b.lateRisk-a.lateRisk).slice(0,5).map(s=>{
+          const d=driver(s.driver);
+          return `<tr>
+            <td><b>${s.id}</b><br><span class="faint">${esc(s.customer)}</span></td>
+            <td>${d?`<div class="row"><div class="mini-avatar">${d.init}</div>${esc(d.name)}</div>`:'<span class="faint">Unassigned</span>'}</td>
+            <td class="muted">${esc(s.from.split(' ')[0])} → ${esc(s.to.split(',')[0])}</td>
+            <td class="${s.lateRisk>=50?'red':''}">${s.eta}</td>
+            <td>${badge(s.status)}</td>
+            <td><button class="btn sm" onclick="go('shipment/${s.id}')">View</button></td>
+          </tr>`;}).join('')}</tbody>
+      </table></div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-head"><div><div class="panel-title">Live Activity</div>
+        <div class="panel-sub">Latest fleet events</div></div></div>
+      <div>${DB.activity.slice(0,6).map(([t,k,title,sub])=>`
+        <div class="event"><div class="time">${t}</div>
+        <div class="event-icon">${k==='ok'?'✓':k==='crit'?'!':k==='risk'?'△':'⌖'}</div>
+        <div><strong style="font-size:12px">${esc(title)}</strong><p class="muted" style="margin:2px 0 0">${esc(sub)}</p></div></div>`).join('')}
+      </div>
+    </div>
+  </div>
+
+  <div class="panel" style="margin-top:16px;border-color:#ddd6fe">
+    <div class="panel-head" style="background:#faf8ff">
+      <div class="row"><div class="ico" style="background:#ede9fe;color:var(--purple)">✦</div>
+        <div><div class="panel-title">FleetFlow Intelligence</div>
+        <div class="panel-sub">Grounded in your live operational data — not a generic chatbot</div></div></div>
+      <button class="btn" onclick="toast('Ask: which deliveries are likely to be late today?')">Ask AI</button>
+    </div>
+    <div class="panel-body">
+      <div style="background:#fafafa;border:1px solid var(--line);border-radius:9px;padding:14px;font-size:12.5px;line-height:1.6">
+        <b>Recommended action: recover FF-10293</b><br>
+        Usman Tariq has been offline for 31 minutes while FF-10293 is already 18 minutes behind schedule
+        and its delivery window closes at 15:00. <b>Hamza Khan</b> is 3.2 km away, has no active load and
+        a 4,000 kg vehicle. Reassigning now reduces the projected delay to roughly <b>6 minutes</b>.
+      </div>
+      <div class="actions" style="margin-top:11px">
+        <button class="btn" onclick="go('shipment/FF-10293')">Open reassignment</button>
+        <button class="btn" onclick="go('shipment/FF-10293')">View shipment timeline</button>
+        <button class="btn" onclick="toast('Late risk 78% — driver offline 31 min, route congestion on Ferozepur Rd, window closes in 35 min')">Why is this at risk?</button>
+      </div>
+    </div>
+  </div>`;
+}
+</script>
+
+<script>
+/* ======================================================= SHARED PIECES */
+function emptyState(title,text,btn){
+  return `<div class="empty"><div class="mark">▤</div><h3>${title}</h3><p>${text}</p>${btn||''}</div>`;
+}
+function skeletonRows(n,cols){
+  return `<div style="padding:16px 18px">${Array.from({length:n},()=>
+    `<div class="row" style="margin-bottom:14px">${Array.from({length:cols||4},(_,i)=>
+      `<div class="skel" style="height:13px;flex:${i===0?2:1}"></div>`).join('')}</div>`).join('')}</div>`;
+}
+function timeline(s){
+  const doneSet = s.history.map(h=>h[0]);
+  const rail = HAPPY.filter(k=>doneSet.includes(k) || HAPPY.indexOf(k) > HAPPY.indexOf(s.status));
+  const items = s.history.map(([st,t,by])=>
+    `<li class="${st===s.status?'current':'done'}"><span class="dot"></span>
+      <b>${ST[st].l}</b><small>${t} · ${esc(by)}</small></li>`);
+  if(!['delivered','failed','cancelled','returned'].includes(s.status)){
+    HAPPY.slice(HAPPY.indexOf(s.status)+1).forEach(st=>
+      items.push(`<li class="todo"><span class="dot"></span><b>${ST[st].l}</b><small>pending</small></li>`));
+  }
+  return `<ol class="timeline">${items.join('')}</ol>`;
+}
+function riskBar(pct){
+  const c = pct>=60?'red':pct>=30?'amber':'green';
+  return `<div style="height:6px;background:var(--line);border-radius:6px;overflow:hidden">
+    <div style="height:100%;width:${pct}%;background:var(--${c})"></div></div>`;
+}
+
+/* ========================================================== SHIPMENTS */
+const TABS = [['all','All'],['active','Active'],['risk','At risk'],['delivered','Delivered'],['failed','Failed']];
+function setTab(t){ S.tab=t; render(); }
+function filterList(q){
+  S.filter=q;
+  $$('#shipRows tr').forEach(r=>{
+    r.style.display = r.textContent.toLowerCase().includes(q.toLowerCase()) ? '' : 'none';
+  });
+  const visible = $$('#shipRows tr').filter(r=>r.style.display!=='none').length;
+  const e = $('#noMatch'); if(e) e.style.display = visible ? 'none' : '';
+}
+function shipmentsFor(tab){
+  const all = DB.shipments;
+  if(tab==='active')    return all.filter(s=>['assigned','accepted','picked_up','in_transit','arriving'].includes(s.status));
+  if(tab==='risk')      return all.filter(s=>s.lateRisk>=50 && s.status!=='delivered');
+  if(tab==='delivered') return all.filter(s=>s.status==='delivered');
+  if(tab==='failed')    return all.filter(s=>['failed','returned','cancelled'].includes(s.status));
+  return all;
+}
+function renderShipments(){
+  // Filter twice on purpose: instantly in the DOM while typing, and here so the
+  // text survives a re-render (create, assign, status change).
+  const q = S.filter.toLowerCase();
+  const rows = shipmentsFor(S.tab).filter(s=>!q ||
+    [s.id,s.customer,s.from,s.to,s.window,ST[s.status].l,(driver(s.driver)||{}).name]
+      .join(' ').toLowerCase().includes(q));
+  const body = S.loading ? skeletonRows(6,6) : rows.length ? `
+    <div class="table-wrap"><table class="table">
+      <thead><tr><th>Shipment</th><th>Customer</th><th>Route</th><th>Driver</th><th>Window</th><th>Late risk</th><th>Status</th><th></th></tr></thead>
+      <tbody id="shipRows">${rows.map(s=>{
+        const d = driver(s.driver);
+        return `<tr>
+          <td><b>${s.id}</b><br><span class="faint">${s.priority}</span></td>
+          <td>${esc(s.customer)}</td>
+          <td class="muted">${esc(s.from)}<br>→ ${esc(s.to)}</td>
+          <td>${d?`<div class="row"><div class="mini-avatar">${d.init}</div>${esc(d.name)}</div>`:'<span class="badge gray">Unassigned</span>'}</td>
+          <td class="muted">${s.window}</td>
+          <td style="min-width:80px">${riskBar(s.lateRisk)}<span class="faint" style="font-size:10.5px">${s.lateRisk}%</span></td>
+          <td>${badge(s.status)}</td>
+          <td><button class="btn sm" onclick="go('shipment/${s.id}')">Open</button></td>
+        </tr>`;}).join('')}</tbody>
+    </table>
+    <div id="noMatch" style="display:none">${emptyState('No matching shipments','Nothing matches your search on this tab.','')}</div>
+    </div>`
+    : emptyState('No shipments here','There are no shipments in this state right now.',
+        `<button class="btn primary" onclick="openWizard()">＋ Create shipment</button>`);
+
+  return pageHead('Shipments','The full delivery lifecycle, from creation to payment.',
+      `<button class="btn primary" onclick="openWizard()">＋ New shipment</button>`)
+  + `<div class="panel">
+      <div class="tabs">${TABS.map(([k,l])=>
+        `<div class="tab ${S.tab===k?'active':''}" onclick="setTab('${k}')">${l} <span class="faint">${shipmentsFor(k).length}</span></div>`).join('')}</div>
+      <div class="panel-head">
+        <input id="flt" class="search" placeholder="Filter by id, customer, driver…" value="${esc(S.filter)}" oninput="filterList(this.value)">
+        <span class="muted">${rows.length} shipments</span>
+      </div>
+      ${body}
+    </div>`;
+}
+
+/* ==================================================== SHIPMENT DETAIL */
+function renderShipment(id){
+  const s = ship(id);
+  if(!s) return pageHead('Shipment not found',`No shipment with id ${esc(id)} exists in this organization.`,
+      `<button class="btn" onclick="go('shipments')">← Back to shipments</button>`)
+    + `<div class="panel">${emptyState('404','This id may belong to another organization — tenant isolation would block it server-side.',
+      `<button class="btn primary" onclick="go('shipments')">Back to shipments</button>`)}</div>`;
+
+  const d = driver(s.driver);
+  const nexts = FLOW[s.status];
+  const actionBtns = nexts.length
+    ? nexts.map(n=>{
+        if(n==='assigned') return `<button class="btn primary" onclick="openAssign('${s.id}')">Assign driver</button>`;
+        if(n==='delivered')return `<button class="btn primary" onclick="advance('${s.id}','delivered','${esc(d?d.name:'Dispatcher')}')">Mark delivered</button>`;
+        return `<button class="btn ${n==='cancelled'||n==='failed'?'danger':''}" onclick="advance('${s.id}','${n}','Dispatcher')">${ST[n].l}</button>`;
+      }).join('')
+    : `<span class="muted">This shipment is in a final state. No further transitions are allowed.</span>`;
+
+  return pageHead(s.id, `${esc(s.customer)} · created ${s.created} · ${s.priority} priority`,
+      `<button class="btn" onclick="go('shipments')">← All shipments</button>
+       <button class="btn" onclick="go('track/${s.id}')">Public tracking page</button>`)
+  + `<div class="grid-detail">
+    <div>
+      <div class="panel" style="margin-bottom:16px">
+        <div class="panel-head">
+          <div><div class="panel-title">Live position</div>
+          <div class="panel-sub">${s.driver&&s.status!=='delivered'
+            ? (s.driver==='DRV-03'
+               ? '<span class="live-dot red"></span><span class="red">Location delayed · last fix 31 min ago</span>'
+               : '<span class="live-dot"></span>Live · updating every 2 seconds')
+            : 'No live feed for this shipment'}</div></div>
+          <div>${badge(s.status)}</div>
+        </div>
+        ${mapHTML('short', FLEET.filter(f=>f.s===s.id), '')}
+      </div>
+
+      <div class="panel">
+        <div class="panel-head"><div><div class="panel-title">Shipment lifecycle</div>
+          <div class="panel-sub">Transitions are validated server-side — the UI only offers what is legal</div></div></div>
+        <div class="panel-body" style="display:grid;grid-template-columns:1fr 1fr;gap:24px">
+          ${timeline(s)}
+          <div>
+            <div class="review-line"><span class="muted">Pickup</span><b style="text-align:right">${esc(s.from)}</b></div>
+            <div class="review-line"><span class="muted">Delivery</span><b style="text-align:right">${esc(s.to)}</b></div>
+            <div class="review-line"><span class="muted">Window</span><b>${s.window}</b></div>
+            <div class="review-line"><span class="muted">Weight</span><b>${s.weight}</b></div>
+            <div class="review-line"><span class="muted">ETA</span><b class="${s.lateRisk>=50?'red':''}">${s.eta}</b></div>
+            <div class="review-line"><span class="muted">Late risk</span><b class="${s.lateRisk>=60?'red':s.lateRisk>=30?'amber':'green'}">${s.lateRisk}%</b></div>
+            <div style="margin-top:10px">${riskBar(s.lateRisk)}</div>
+          </div>
+        </div>
+        <div class="panel-head" style="border-top:1px solid var(--border);border-bottom:0">
+          <span class="muted">Allowed next: ${nexts.map(n=>ST[n].l).join(', ')||'—'}</span>
+          <div class="actions">${actionBtns}</div>
+        </div>
+      </div>
+
+      <div class="panel" style="margin-top:16px">
+        <div class="panel-head"><div class="panel-title">Proof of delivery</div>
+          ${s.pod?'<span class="badge green">Captured</span>':'<span class="badge gray">Not captured</span>'}</div>
+        ${s.pod ? `<div class="panel-body form-grid">
+            <div><div class="muted">Receiver</div><b>${esc(s.pod.receiver)}</b>
+              <div class="muted" style="margin-top:10px">Captured at</div><b>${s.pod.time}</b>
+              <div class="muted" style="margin-top:10px">GPS at capture</div><b>${s.pod.gps}</b>
+              ${s.pod.notes?`<div class="muted" style="margin-top:10px">Notes</div><div>${esc(s.pod.notes)}</div>`:''}</div>
+            <div>
+              <div class="muted" style="margin-bottom:5px">Signature</div>
+              <div style="border:1px solid var(--border);border-radius:9px;height:72px;display:grid;place-items:center;font-family:cursive;font-size:19px;color:#334">${esc(s.pod.receiver)}</div>
+              <div class="muted" style="margin:10px 0 5px">Delivery photo</div>
+              <div style="border:1px solid var(--border);border-radius:9px;height:72px;display:grid;place-items:center;background:var(--gray-soft);font-size:20px">📷</div>
+              <div class="hint" style="font-size:11px;color:var(--faint);margin-top:6px">Stored in S3 · pod/${s.id}.jpg · image/jpeg · 412 KB</div>
+            </div>
+          </div>`
+        : emptyState('No proof of delivery yet','The driver captures receiver name, signature, photo and GPS in the mobile app. Delivery cannot complete without it.','')}
+      </div>
+    </div>
+
+    <div>
+      <div class="panel" style="margin-bottom:16px">
+        <div class="panel-head"><div class="panel-title">Assigned driver</div>
+          ${s.driver?`<button class="btn sm" onclick="openAssign('${s.id}')">Reassign</button>`:''}</div>
+        ${d ? `<div class="panel-body">
+            <div class="row" style="margin-bottom:12px">
+              <div class="mini-avatar" style="width:38px;height:38px;font-size:12px">${d.init}</div>
+              <div><b>${esc(d.name)}</b><div class="muted">${d.phone}</div></div>
+            </div>
+            <div class="review-line"><span class="muted">Status</span>
+              <b class="${d.status==='offline'?'red':'green'}">${d.status.replace('_',' ')}</b></div>
+            <div class="review-line"><span class="muted">Vehicle</span><b>${d.vehicle}</b></div>
+            <div class="review-line"><span class="muted">Active load</span><b>${d.load} deliveries</b></div>
+            <div class="review-line"><span class="muted">Success rate</span><b>${d.success}%</b></div>
+            <button class="btn block" style="margin-top:12px" onclick="go('driver/${d.id}')">Open driver profile</button>
+          </div>`
+        : `<div class="panel-body">${emptyState('Unassigned','No driver on this shipment yet.',
+            `<button class="btn primary" onclick="openAssign('${s.id}')">Assign a driver</button>`)}</div>`}
+      </div>
+
+      <div class="panel" style="margin-bottom:16px">
+        <div class="panel-head"><div class="panel-title">Payment</div>
+          <span class="badge ${s.payment==='paid'?'green':s.payment==='failed'?'red':'amber'}">${s.payment}</span></div>
+        <div class="panel-body">
+          <div class="review-line"><span class="muted">Amount</span><b>${money(s.amount)}</b></div>
+          <div class="review-line"><span class="muted">Method</span><b>Stripe</b></div>
+          <div class="review-line"><span class="muted">Confirmed by</span><b>${s.payment==='paid'?'Verified webhook':'—'}</b></div>
+          <p class="muted" style="margin:10px 0 0;font-size:11.5px">
+            Payment state only changes from a signature-verified Stripe webhook, never from the browser.</p>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head"><div class="panel-title">Audit trail</div></div>
+        <div>${s.history.map(([st,t,by])=>
+          `<div class="event"><div class="time">${t}</div><div>
+            <strong style="font-size:12px">${ST[st].l}</strong>
+            <p class="muted" style="margin:2px 0 0">${esc(by)}</p></div></div>`).reverse().join('')}</div>
+      </div>
+    </div>
+  </div>`;
+}
+
+/* ============================================== DRIVER ASSIGNMENT MODAL */
+function scoreDriver(d,s){
+  // Cheap stand-in for the real recommendation service.
+  let score = 100;
+  if(d.status==='offline') score -= 70;
+  if(d.status==='break')   score -= 35;
+  score -= d.dist * 3;
+  score -= d.load * 12;
+  score += (d.success - 90) * 1.5;
+  const weight = parseInt(String(s.weight).replace(/[^0-9]/g,''),10) || 0;
+  if(d.cap < weight) score -= 60;
+  return Math.max(0,Math.round(score));
+}
+function openAssign(id){
+  const s = ship(id);
+  const ranked = DB.drivers.map(d=>({d,score:scoreDriver(d,s)})).sort((a,b)=>b.score-a.score);
+  S.assign = {id, pick: ranked[0].d.id};
+  overlay(`<div class="modal">
+    <div class="modal-head"><b>Assign driver · ${s.id}</b><button class="btn sm" onclick="closeOverlay()">×</button></div>
+    <div class="modal-body">
+      <p class="muted" style="margin:0 0 14px">Ranked by availability, distance to pickup, current load, vehicle capacity and success rate.</p>
+      ${ranked.map(({d,score},i)=>{
+        const weight = parseInt(String(s.weight).replace(/[^0-9]/g,''),10)||0;
+        const problems = [];
+        if(d.status==='offline') problems.push('currently offline');
+        if(d.status==='break')   problems.push('on break');
+        if(d.cap < weight)       problems.push(`vehicle capacity ${d.cap} kg is under the ${s.weight} load`);
+        return `<div class="rec ${S.assign.pick===d.id?'sel':''}" data-drv="${d.id}" onclick="pickDriver('${d.id}')">
+          <div class="spread">
+            <div class="row"><div class="mini-avatar">${d.init}</div>
+              <div><b>${esc(d.name)}</b>
+              <div class="muted">${d.vehicle} · ${d.cap} kg · ${d.dist} km from pickup</div></div></div>
+            <div style="text-align:right">
+              ${i===0?'<span class="badge green">Recommended</span>':''}
+              <div class="muted" style="margin-top:4px">score ${score}</div></div>
+          </div>
+          <div class="why">${d.status==='available'?'Available now':'Status: '+d.status.replace('_',' ')} ·
+            ${d.load} active ${d.load===1?'delivery':'deliveries'} · ${d.success}% success ·
+            ETA to pickup ~${Math.max(3,Math.round(d.dist*2.6))} min
+            ${problems.length?`<br><span class="red">⚠ ${problems.join(' · ')}</span>`:''}</div>
+        </div>`;}).join('')}
+    </div>
+    <div class="modal-foot">
+      <span class="muted">Backend re-validates capacity and availability on submit.</span>
+      <div class="actions"><button class="btn" onclick="closeOverlay()">Cancel</button>
+      <button class="btn primary" onclick="confirmAssign()">Assign driver</button></div>
+    </div>
+  </div>`);
+}
+function pickDriver(id){
+  S.assign.pick = id;
+  $$('.rec').forEach(el=>el.classList.toggle('sel', el.dataset.drv===id));
+}
+function confirmAssign(){
+  const s = ship(S.assign.id), d = driver(S.assign.pick);
+  const weight = parseInt(String(s.weight).replace(/[^0-9]/g,''),10)||0;
+  if(d.status==='offline') return toast(`${d.name} is offline and cannot accept a new shipment.`,1);
+  if(d.cap < weight)       return toast(`${d.vehicle} carries ${d.cap} kg — this shipment is ${s.weight}.`,1);
+  const wasAssigned = s.driver;
+  s.driver = d.id; s.vehicle = d.vehicle;
+  if(wasAssigned){
+    s.history.push(['assigned', now(), 'Reassigned to '+d.name]);
+    audit(S.user.name,'Reassigned shipment to '+d.name,s.id);
+    toast(`${s.id} reassigned to ${d.name}`);
+    closeOverlay(); render();
+  } else {
+    closeOverlay();
+    advance(s.id,'assigned',S.user.name,'→ '+d.name);
+  }
+}
+</script>
+
+<script>
+/* =========================================================== TRACKING */
+function renderTracking(){
+  const live = DB.shipments.filter(s=>['picked_up','in_transit','arriving'].includes(s.status));
+  return pageHead('Live Tracking','Every vehicle reporting GPS, updated continuously over a WebSocket.',
+      `<button class="btn" onclick="toast('Geofence editor opened')">Geofences</button>`)
+  + `<div class="grid-detail">
+      <div class="panel">
+        <div class="panel-head"><div><div class="panel-title">Fleet map</div>
+          <div class="panel-sub"><span class="live-dot"></span>${FLEET.length} vehicles · last packet <b id="agoLbl2">just now</b></div></div>
+          <button class="btn" onclick="go('dashboard')">← Command Center</button></div>
+        ${mapHTML('tall', FLEET, '')}
+      </div>
+      <div class="panel">
+        <div class="panel-head"><div><div class="panel-title">Vehicles reporting</div>
+          <div class="panel-sub">Stale feeds are flagged, not hidden</div></div></div>
+        <div class="divide">${FLEET.map(f=>{
+          const d = driver(f.d), s = f.s?ship(f.s):null;
+          return `<div style="padding:13px 16px">
+            <div class="spread">
+              <div class="row"><div class="mini-avatar">${d.init}</div>
+                <div><b>${esc(d.name)}</b><div class="muted">${f.v}${s?' · '+s.id:' · idle'}</div></div></div>
+              ${f.stale?'<span class="badge red">Stale</span>':'<span class="badge green">Live</span>'}
+            </div>
+            <div class="muted" style="margin-top:7px">
+              ${f.stale
+                ? '⚠ Last fix 31 min ago — driver may have lost signal'
+                : `● Updated <span class="ago">just now</span> · ${(30+Math.round(f.x))} km/h · heading ${Math.round(f.x*3)%360}°`}
+            </div>
+            ${s?`<button class="btn sm" style="margin-top:9px" onclick="go('shipment/${s.id}')">Open ${s.id}</button>`:''}
+          </div>`;}).join('')}</div>
+      </div>
+    </div>`;
+}
+
+/* ============================================================= ROUTES */
+function renderRoutes(){
+  const routes = [
+    {id:'R-018',stops:8,km:74,dur:'2h 10m',driver:'Bilal Ahmed',risk:'On schedule'},
+    {id:'R-021',stops:6,km:52,dur:'1h 42m',driver:'Sana Riaz',risk:'On schedule'},
+    {id:'R-024',stops:9,km:96,dur:'3h 05m',driver:'Usman Tariq',risk:'18 min behind'},
+    {id:'R-027',stops:4,km:38,dur:'1h 06m',driver:'Hamza Khan',risk:'Not started'}
+  ];
+  return pageHead('Routes &amp; Optimization','Plan multi-stop routes, compare ETAs and cut unnecessary mileage.',
+      `<button class="btn primary" onclick="toast('Optimization job queued — solver runs in a BullMQ worker, not in the request')">Optimize all routes</button>`)
+  + `<div class="kpis four">
+      <div class="stat"><div class="stat-label">Active routes</div><div class="stat-value">18</div><div class="stat-note">across 5 vehicles</div></div>
+      <div class="stat"><div class="stat-label">Distance today</div><div class="stat-value">842 km</div><div class="stat-note">↓ 6% vs yesterday</div></div>
+      <div class="stat"><div class="stat-label">Projected saving</div><div class="stat-value green">14%</div><div class="stat-note">if re-sequenced now</div></div>
+      <div class="stat"><div class="stat-label">Late-risk routes</div><div class="stat-value amber">3</div><div class="stat-note">windows close before 15:00</div></div>
+    </div>
+    <div class="grid-detail">
+      <div class="panel">
+        <div class="panel-head"><div class="panel-title">Planned routes</div><span class="muted">Mapbox Directions API</span></div>
+        ${mapHTML('', FLEET.slice(0,3), '')}
+      </div>
+      <div class="panel">
+        <div class="panel-head"><div class="panel-title">Today's routes</div></div>
+        <div class="divide">${routes.map(r=>`
+          <div style="padding:13px 16px">
+            <div class="spread"><b>Route ${r.id}</b>
+              <span class="badge ${r.risk.includes('behind')?'amber':r.risk==='Not started'?'gray':'green'}">${r.risk}</span></div>
+            <div class="muted" style="margin-top:4px">${r.stops} stops · ${r.km} km · ${r.dur} · ${esc(r.driver)}</div>
+            <button class="btn sm" style="margin-top:9px" onclick="toast('Route ${r.id}: ${r.stops} stops, optimized sequence saves 11 min')">Open route</button>
+          </div>`).join('')}</div>
+      </div>
+    </div>`;
+}
+
+/* ============================================================ DRIVERS */
+function renderDrivers(){
+  const stBadge = st => ({available:'green',on_route:'blue',offline:'red',break:'amber'})[st];
+  return pageHead('Drivers','Availability, live location, workload and performance — not just a contact list.',
+      `<button class="btn primary" onclick="toast('Driver invite sent — they set a password on first login')">＋ Add driver</button>`)
+  + `<div class="kpis four">
+      <div class="stat"><div class="stat-label">Total drivers</div><div class="stat-value">${DB.drivers.length}</div><div class="stat-note">in this organization</div></div>
+      <div class="stat"><div class="stat-label">Available now</div><div class="stat-value green">${DB.drivers.filter(d=>d.status==='available').length}</div><div class="stat-note">ready for assignment</div></div>
+      <div class="stat"><div class="stat-label">On route</div><div class="stat-value blue">${DB.drivers.filter(d=>d.status==='on_route').length}</div><div class="stat-note">actively delivering</div></div>
+      <div class="stat"><div class="stat-label">Offline</div><div class="stat-value red">${DB.drivers.filter(d=>d.status==='offline').length}</div><div class="stat-note">1 mid-route</div></div>
+    </div>
+    <div class="panel"><div class="table-wrap"><table class="table">
+      <thead><tr><th>Driver</th><th>Status</th><th>Vehicle</th><th>Active load</th><th>Distance to depot</th><th>Success</th><th>Rating</th><th></th></tr></thead>
+      <tbody>${DB.drivers.map(d=>`<tr>
+        <td><div class="row"><div class="mini-avatar">${d.init}</div><div><b>${esc(d.name)}</b><div class="faint">${d.phone}</div></div></div></td>
+        <td><span class="badge ${stBadge(d.status)}">${d.status.replace('_',' ')}</span></td>
+        <td>${d.vehicle}</td>
+        <td>${d.load} active</td>
+        <td class="muted">${d.dist} km</td>
+        <td>${d.success}%</td>
+        <td>★ ${d.rating}</td>
+        <td><button class="btn sm" onclick="go('driver/${d.id}')">Profile</button></td>
+      </tr>`).join('')}</tbody>
+    </table></div></div>`;
+}
+
+function renderDriverProfile(id){
+  const d = driver(id);
+  if(!d) return pageHead('Driver not found','',`<button class="btn" onclick="go('drivers')">← Drivers</button>`);
+  const jobs = DB.shipments.filter(s=>s.driver===d.id);
+  return pageHead(esc(d.name), `${d.id} · ${d.phone} · vehicle ${d.vehicle}`,
+      `<button class="btn" onclick="go('drivers')">← All drivers</button>
+       <button class="btn" onclick="toast('Calling ${esc(d.name)}…')">Call driver</button>`)
+  + `<div class="kpis four">
+      <div class="stat"><div class="stat-label">Deliveries (30d)</div><div class="stat-value">${d.deliveries}</div></div>
+      <div class="stat"><div class="stat-label">Success rate</div><div class="stat-value green">${d.success}%</div></div>
+      <div class="stat"><div class="stat-label">Rating</div><div class="stat-value">★ ${d.rating}</div></div>
+      <div class="stat"><div class="stat-label">Current status</div><div class="stat-value ${d.status==='offline'?'red':'green'}" style="font-size:17px;padding-top:6px">${d.status.replace('_',' ')}</div></div>
+    </div>
+    <div class="grid-detail">
+      <div class="panel">
+        <div class="panel-head"><div class="panel-title">Assigned shipments</div><span class="muted">${jobs.length} total</span></div>
+        ${jobs.length?`<div class="table-wrap"><table class="table">
+          <thead><tr><th>Shipment</th><th>Customer</th><th>Window</th><th>Status</th><th></th></tr></thead>
+          <tbody>${jobs.map(s=>`<tr><td><b>${s.id}</b></td><td>${esc(s.customer)}</td><td class="muted">${s.window}</td>
+            <td>${badge(s.status)}</td><td><button class="btn sm" onclick="go('shipment/${s.id}')">Open</button></td></tr>`).join('')}</tbody>
+        </table></div>`:emptyState('No shipments','This driver has no assigned deliveries.','')}
+      </div>
+      <div class="panel">
+        <div class="panel-head"><div class="panel-title">Live location</div>
+          ${d.status==='offline'?'<span class="badge red">Stale</span>':'<span class="badge green">Live</span>'}</div>
+        ${mapHTML('short', FLEET.filter(f=>f.d===d.id), '')}
+        <div class="panel-body">
+          <div class="review-line"><span class="muted">Vehicle capacity</span><b>${d.cap} kg</b></div>
+          <div class="review-line"><span class="muted">Distance to depot</span><b>${d.dist} km</b></div>
+          <div class="review-line"><span class="muted">Active load</span><b>${d.load} deliveries</b></div>
+        </div>
+      </div>
+    </div>`;
+}
+
+/* =========================================================== VEHICLES */
+function renderVehicles(){
+  const c = st => ({active:'green',idle:'gray',maintenance_due:'amber',out_of_service:'red'})[st];
+  return pageHead('Vehicles','Capacity, utilization and service condition across the fleet.',
+      `<button class="btn primary" onclick="toast('Add vehicle form opened')">＋ Add vehicle</button>`)
+  + `<div class="kpis four">
+      <div class="stat"><div class="stat-label">Fleet size</div><div class="stat-value">${DB.vehicles.length}</div></div>
+      <div class="stat"><div class="stat-label">In service</div><div class="stat-value green">${DB.vehicles.filter(v=>v.status==='active').length}</div></div>
+      <div class="stat"><div class="stat-label">Idle</div><div class="stat-value">${DB.vehicles.filter(v=>v.status==='idle').length}</div></div>
+      <div class="stat"><div class="stat-label">Service due</div><div class="stat-value amber">${DB.vehicles.filter(v=>v.status==='maintenance_due').length}</div></div>
+    </div>
+    <div class="panel"><div class="table-wrap"><table class="table">
+      <thead><tr><th>Vehicle</th><th>Type</th><th>Capacity</th><th>Odometer</th><th>Assigned driver</th><th>Status</th><th></th></tr></thead>
+      <tbody>${DB.vehicles.map(v=>`<tr>
+        <td><b>${v.id}</b></td><td>${v.type}</td><td>${v.cap.toLocaleString()} kg</td>
+        <td class="muted">${v.odo.toLocaleString()} km</td><td>${esc(v.driver)}</td>
+        <td><span class="badge ${c(v.status)}">${v.status.replace(/_/g,' ')}</span></td>
+        <td><button class="btn sm" onclick="toast('${v.id}: ${esc(v.service)}')">Details</button></td>
+      </tr>`).join('')}</tbody>
+    </table></div></div>`;
+}
+
+/* ======================================================== MAINTENANCE */
+function renderMaintenance(){
+  const due = DB.vehicles.filter(v=>v.status==='maintenance_due');
+  return pageHead('Maintenance','Prevent downtime before it takes deliveries with it.',
+      `<button class="btn primary" onclick="toast('Service booking created')">＋ Schedule service</button>`)
+  + `<div class="panel" style="margin-bottom:16px">
+      <div class="panel-head"><div class="panel-title">Why this matters</div></div>
+      <div class="panel-body muted">
+        Taking VAN-019 out of service affects <b>1 active shipment (FF-10293)</b> and frees Usman Tariq.
+        FleetFlow flags the affected deliveries and suggests reassignment before you confirm the booking.
+      </div>
+    </div>
+    <div class="panel">
+      <div class="panel-head"><div class="panel-title">Upcoming maintenance</div><span class="muted">${due.length} due</span></div>
+      ${due.length ? `<div class="divide">${due.map(v=>`
+        <div style="padding:14px 16px" class="spread">
+          <div><b>${v.id}</b> <span class="badge amber">Due soon</span>
+            <div class="muted" style="margin-top:4px">${esc(v.service)} · ${v.odo.toLocaleString()} km · driver ${esc(v.driver)}</div></div>
+          <div class="actions">
+            <button class="btn sm" onclick="toast('Affected: FF-10293. Reassign before taking ${v.id} off the road.')">Affected deliveries</button>
+            <button class="btn sm primary" onclick="toast('${v.id} booked for service tomorrow 09:00')">Schedule</button>
+          </div>
+        </div>`).join('')}</div>`
+      : emptyState('Nothing due','Every vehicle is inside its service interval.','')}
+    </div>`;
+}
+
+/* ========================================================== CUSTOMERS */
+function renderCustomers(){
+  return pageHead('Customers','Accounts, delivery volume and outstanding balances.',
+      `<button class="btn primary" onclick="toast('Add customer form opened')">＋ Add customer</button>`)
+  + `<div class="panel"><div class="table-wrap"><table class="table">
+      <thead><tr><th>Customer</th><th>Primary contact</th><th>Phone</th><th>Active shipments</th><th>Outstanding</th><th></th></tr></thead>
+      <tbody>${DB.customers.map(c=>`<tr>
+        <td><b>${esc(c.name)}</b><div class="faint">${c.id}</div></td>
+        <td>${esc(c.contact)}</td><td class="muted">${c.phone}</td><td>${c.active}</td>
+        <td class="${c.outstanding>500000?'amber':''}">${money(c.outstanding)}</td>
+        <td><button class="btn sm" onclick="setTab('all');go('shipments');setTimeout(()=>{const i=$('#flt');if(i){i.value='${esc(c.name)}';filterList('${esc(c.name)}')}},40)">Shipments</button></td>
+      </tr>`).join('')}</tbody>
+    </table></div></div>`;
+}
+
+/* =========================================================== PAYMENTS */
+function renderPayments(){
+  const sum = st => DB.invoices.filter(i=>i.status===st).reduce((a,b)=>a+b.amount,0);
+  const c = st => ({paid:'green',pending:'amber',failed:'red',refunded:'gray'})[st];
+  return pageHead('Payments &amp; Invoices','Every state change here comes from a verified Stripe webhook.',
+      `<button class="btn primary" onclick="toast('Invoice draft created')">＋ Create invoice</button>`)
+  + `<div class="kpis four">
+      <div class="stat"><div class="stat-label">Collected</div><div class="stat-value green">${money(sum('paid'))}</div><div class="stat-note">settled</div></div>
+      <div class="stat"><div class="stat-label">Pending</div><div class="stat-value amber">${money(sum('pending'))}</div><div class="stat-note">awaiting payment</div></div>
+      <div class="stat"><div class="stat-label">Failed</div><div class="stat-value red">${money(sum('failed'))}</div><div class="stat-note">retry required</div></div>
+      <div class="stat"><div class="stat-label">Refunded</div><div class="stat-value">${money(sum('refunded'))}</div><div class="stat-note">this month</div></div>
+    </div>
+    <div class="panel" style="margin-bottom:16px">
+      <div class="panel-head"><div class="panel-title">Webhook events</div><span class="muted">idempotent by event id</span></div>
+      <div class="divide">
+        <div style="padding:12px 16px" class="spread"><div><code>payment_intent.succeeded</code>
+          <div class="muted">evt_1P9x… · INV-2048 · signature verified</div></div><span class="badge green">processed</span></div>
+        <div style="padding:12px 16px" class="spread"><div><code>payment_intent.succeeded</code>
+          <div class="muted">evt_1P9x… · duplicate delivery from Stripe</div></div><span class="badge gray">ignored</span></div>
+        <div style="padding:12px 16px" class="spread"><div><code>payment_intent.payment_failed</code>
+          <div class="muted">evt_1P8k… · INV-2045 · card declined</div></div><span class="badge red">processed</span></div>
+      </div>
+    </div>
+    <div class="panel"><div class="table-wrap"><table class="table">
+      <thead><tr><th>Invoice</th><th>Customer</th><th>Shipment</th><th>Amount</th><th>Status</th><th>Date</th><th></th></tr></thead>
+      <tbody>${DB.invoices.map(i=>`<tr>
+        <td><b>${i.id}</b></td><td>${esc(i.customer)}</td>
+        <td><a href="#/shipment/${i.shipment}">${i.shipment}</a></td>
+        <td>${money(i.amount)}</td><td><span class="badge ${c(i.status)}">${i.status}</span></td>
+        <td class="muted">${i.date}</td>
+        <td><button class="btn sm" onclick="toast('${i.status==='pending'?'Payment reminder sent':'Invoice PDF downloaded'}')">${i.status==='pending'?'Remind':'Download'}</button></td>
+      </tr>`).join('')}</tbody>
+    </table></div></div>`;
+}
+
+/* ========================================================== ANALYTICS */
+function renderAnalytics(){
+  const bars = [62,74,58,81,69,88,94];
+  const days = ['Thu','Fri','Sat','Sun','Mon','Tue','Wed'];
+  const delivered = DB.shipments.filter(s=>s.status==='delivered').length;
+  const failed = DB.shipments.filter(s=>s.status==='failed').length;
+  const rate = Math.round(delivered/(delivered+failed)*100);
+  if(S.loading) return pageHead('Analytics','Loading…','') + `<div class="panel">${skeletonRows(8,5)}</div>`;
+  return pageHead('Analytics','Delivery, driver, fleet and financial performance.',
+      `<button class="btn" onclick="toast('Report export queued')">↓ Export</button>`)
+  + `<div class="kpis four">
+      <div class="stat"><div class="stat-label">Delivery success</div><div class="stat-value green">${rate}%</div><div class="stat-note">${delivered} of ${delivered+failed}</div></div>
+      <div class="stat"><div class="stat-label">Avg. delivery time</div><div class="stat-value">46m</div><div class="stat-note">↓ 4m vs last week</div></div>
+      <div class="stat"><div class="stat-label">Fleet utilization</div><div class="stat-value blue">81%</div><div class="stat-note">3 of 5 vehicles active</div></div>
+      <div class="stat"><div class="stat-label">Revenue (7d)</div><div class="stat-value">${money(393000)}</div><div class="stat-note green">↑ 8.2%</div></div>
+    </div>
+    <div class="grid-2" style="margin-top:0">
+      <div class="panel">
+        <div class="panel-head"><div><div class="panel-title">Deliveries completed</div>
+          <div class="panel-sub">Last 7 days</div></div></div>
+        <div class="bars">${bars.map(b=>`<i style="height:${b}%"></i>`).join('')}</div>
+        <div class="bars-x">${days.map(d=>`<span>${d}</span>`).join('')}</div>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><div class="panel-title">Driver leaderboard</div></div>
+        <div class="divide">${[...DB.drivers].sort((a,b)=>b.deliveries-a.deliveries).slice(0,5).map((d,i)=>`
+          <div style="padding:11px 16px" class="spread">
+            <div class="row"><span class="faint" style="width:14px">${i+1}</span>
+              <div class="mini-avatar">${d.init}</div><b>${esc(d.name)}</b></div>
+            <div style="text-align:right"><b>${d.deliveries}</b><div class="faint" style="font-size:10.5px">${d.success}% success</div></div>
+          </div>`).join('')}</div>
+      </div>
+    </div>
+    <div class="panel" style="margin-top:16px">
+      <div class="panel-head"><div class="panel-title">Where time is lost</div></div>
+      <div class="panel-body muted">
+        Average dwell at pickup is <b>11 min</b> against a 6 min target, costing roughly 40 driver-minutes a day.
+        The Ferozepur Road corridor carries <b>62%</b> of all late deliveries between 13:00 and 16:00.
+      </div>
+    </div>`;
+}
+
+/* ====================================================== USERS / AUDIT */
+function renderUsers(){
+  const permsFor = r => (PERMS[r][0]==='*' ? 'all permissions' : PERMS[r].length+' permissions');
+  return pageHead('Users &amp; Permissions','Roles map to permissions. The API checks permissions, not the UI.',
+      `<button class="btn primary" onclick="toast('Invite sent')">＋ Invite user</button>`)
+  + `<div class="panel" style="margin-bottom:16px">
+      <div class="panel-head"><div class="panel-title">Role matrix</div></div>
+      <div class="table-wrap"><table class="table">
+        <thead><tr><th>Role</th><th>Scope</th><th>Can do</th></tr></thead>
+        <tbody>
+          <tr><td><b>Admin</b></td><td>${permsFor('admin')}</td><td class="muted">Everything in the organization, including billing, users and audit logs</td></tr>
+          <tr><td><b>Dispatcher</b></td><td>${permsFor('dispatcher')}</td><td class="muted">Shipments, routes, drivers, vehicles, customers — no billing, users or audit</td></tr>
+          <tr><td><b>Driver</b></td><td>${permsFor('driver')}</td><td class="muted">Only their own assigned deliveries and proof of delivery</td></tr>
+          <tr><td><b>Client</b></td><td>${permsFor('client')}</td><td class="muted">Their own shipments, tracking and invoices</td></tr>
+        </tbody>
+      </table></div>
+    </div>
+    <div class="panel"><div class="table-wrap"><table class="table">
+      <thead><tr><th>User</th><th>Email</th><th>Role</th><th>Status</th><th></th></tr></thead>
+      <tbody>${DB.users.map(u=>`<tr>
+        <td><b>${esc(u.name)}</b></td><td class="muted">${esc(u.email)}</td>
+        <td><span class="badge ${u.role==='admin'?'purple':'blue'}">${u.role}</span></td>
+        <td><span class="badge ${u.status==='active'?'green':'gray'}">${u.status}</span></td>
+        <td><button class="btn sm" onclick="toast('Permission editor for ${esc(u.name)}')">Permissions</button></td>
+      </tr>`).join('')}</tbody>
+    </table></div></div>`;
+}
+
+function renderAudit(){
+  return pageHead('Audit Logs','Who did what, to which record, and when.',
+      `<button class="btn" onclick="toast('CSV export queued')">↓ Export logs</button>`)
+  + `<div class="panel"><div class="table-wrap"><table class="table">
+      <thead><tr><th>Time</th><th>Actor</th><th>Action</th><th>Entity</th></tr></thead>
+      <tbody>${DB.audit.map(([t,who,what,ent])=>`<tr>
+        <td class="muted">${t}</td><td><b>${esc(who)}</b></td><td>${esc(what)}</td>
+        <td>${ent!=='—'?`<a href="#/shipment/${ent}">${ent}</a>`:'<span class="faint">—</span>'}</td>
+      </tr>`).join('')}</tbody>
+    </table></div></div>`;
+}
+
+/* =========================================================== SETTINGS */
+const SETTINGS = [
+  ['At-risk delivery alerts','Notify dispatchers the moment a delivery is projected to miss its window.',true],
+  ['Customer SMS notifications','Send pickup, out-for-delivery and arrival messages via Twilio.',true],
+  ['Customer email notifications','Send delivery receipts and proof of delivery by email.',true],
+  ['AI operational insights','Generate recommendations from live fleet activity.',true],
+  ['Require photo for proof of delivery','Block completion until a delivery photo is captured.',true],
+  ['Auto-assign drivers','Let FleetFlow assign the top-ranked driver without dispatcher review.',false]
+];
+function renderSettings(){
+  return pageHead('Settings','Organization, notification and operational preferences.',
+      `<button class="btn primary" onclick="toast('Settings saved')">Save changes</button>`)
+  + `<div class="grid-detail">
+      <div class="panel">
+        <div class="panel-head"><div class="panel-title">Operational preferences</div></div>
+        <div class="divide">${SETTINGS.map(([t,d,on],i)=>`
+          <div class="spread" style="padding:14px 18px">
+            <div><b style="font-size:13px">${t}</b><div class="muted" style="margin-top:2px">${d}</div></div>
+            <div class="toggle ${on?'on':''}" onclick="toggleSetting(this,${i})"><div class="knob"></div></div>
+          </div>`).join('')}</div>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><div class="panel-title">Organization</div></div>
+        <div class="panel-body">
+          <div class="field" style="margin-bottom:12px"><label>Organization name</label><input value="${esc(DB.org)}"></div>
+          <div class="field" style="margin-bottom:12px"><label>Time zone</label><select><option>Asia/Karachi (PKT)</option><option>UTC</option></select></div>
+          <div class="field" style="margin-bottom:12px"><label>Currency</label><select><option>PKR</option><option>USD</option></select></div>
+          <div class="field"><label>Tracking domain</label><input value="fleetflow.com/track"><div class="hint">Public tracking links use this prefix.</div></div>
+        </div>
+      </div>
+    </div>`;
+}
+
+/* ================================================================ 403 */
+function renderDenied(page){
+  return pageHead('Access denied',`Your role (${S.user.role}) has no permission for this page.`,
+      `<button class="btn" onclick="go(HOME[S.user.role])">← Back to your dashboard</button>`)
+  + `<div class="panel"><div class="empty">
+      <div class="mark">🔒</div>
+      <h3>403 — ${esc(page)}</h3>
+      <p>The sidebar hides pages you cannot use, but hiding is only convenience.<br>
+      The API would reject this request too, based on the permissions attached to your role.</p>
+      <button class="btn primary" onclick="go(HOME[S.user.role])">Go back</button>
+    </div></div>`;
+}
+function toggleSetting(el,i){
+  el.classList.toggle('on');
+  toast(`${SETTINGS[i][0]} ${el.classList.contains('on')?'enabled':'disabled'}`);
+}
+</script>
+
+<script>
+/* ============================================== OVERLAY / MODAL PLUMBING */
+function overlay(html){
+  $('#overlay').innerHTML = `<div class="modal-bg" onclick="if(event.target===this)closeOverlay()">${html}</div>`;
+}
+function closeOverlay(){ $('#overlay').innerHTML=''; }
+
+/* ============================================ CREATE SHIPMENT (7 STEPS) */
+const WSTEPS = ['Customer','Pickup','Delivery','Package','Window','Driver','Review'];
+function openWizard(){
+  S.wizard = {step:0, d:{customer:DB.customers[0].name, from:'', to:'', weight:'', priority:'Standard',
+                         window:'', notes:'', driver:null}};
+  drawWizard();
+}
+function wizField(label,key,ph,type){
+  return `<div class="field full"><label>${label}</label>
+    <input type="${type||'text'}" value="${esc(S.wizard.d[key])}" placeholder="${ph||''}"
+      oninput="S.wizard.d.${key}=this.value"></div>`;
+}
+function wizardBody(){
+  const d = S.wizard.d;
+  switch(S.wizard.step){
+    case 0: return `<div class="form-grid">
+      <div class="field full"><label>Customer</label>
+        <select onchange="S.wizard.d.customer=this.value">
+          ${DB.customers.map(c=>`<option ${d.customer===c.name?'selected':''}>${esc(c.name)}</option>`).join('')}
+        </select><div class="hint">Only customers inside ${esc(DB.org)} are listed — tenant scoped.</div></div>
+      <div class="field full"><label>Priority</label>
+        <select onchange="S.wizard.d.priority=this.value">
+          ${['Standard','High','Critical'].map(p=>`<option ${d.priority===p?'selected':''}>${p}</option>`).join('')}
+        </select></div></div>`;
+    case 1: return `<div class="form-grid">
+      ${wizField('Pickup address','from','e.g. Lahore Central Warehouse')}
+      <div class="field full"><label>Saved locations</label>
+        <select onchange="S.wizard.d.from=this.value;drawWizard()">
+          <option value="">Choose a depot…</option>
+          ${['Lahore Central Warehouse','Gulberg Depot','Johar Town Hub','Township Depot'].map(x=>`<option ${d.from===x?'selected':''}>${x}</option>`).join('')}
+        </select><div class="hint">Geocoded through Mapbox when saved.</div></div></div>`;
+    case 2: return `<div class="form-grid">
+      ${wizField('Delivery address','to','e.g. DHA Phase 5, Lahore')}
+      <div class="field full"><label>Delivery notes</label>
+        <textarea rows="3" oninput="S.wizard.d.notes=this.value" placeholder="Gate code, floor, contact on arrival…">${esc(d.notes)}</textarea></div></div>`;
+    case 3: return `<div class="form-grid">
+      ${wizField('Package weight (kg)','weight','e.g. 240','number')}
+      <div class="field full"><div class="hint">Capacity is checked against the assigned vehicle in the next steps.</div></div></div>`;
+    case 4: return `<div class="form-grid">
+      <div class="field full"><label>Delivery window</label>
+        <select onchange="S.wizard.d.window=this.value">
+          <option value="">Choose a window…</option>
+          ${['09:00 – 11:00','11:00 – 13:00','13:00 – 15:00','15:00 – 18:00'].map(w=>`<option ${d.window===w?'selected':''}>${w}</option>`).join('')}
+        </select><div class="hint">Missing this window is what "at risk" measures against.</div></div></div>`;
+    case 5: {
+      const fake = {weight:d.weight+' kg'};
+      const ranked = DB.drivers.map(x=>({d:x,score:scoreDriver(x,fake)})).sort((a,b)=>b.score-a.score);
+      return `<p class="muted" style="margin:0 0 12px">Recommended by availability, distance, load and capacity. You can also leave this unassigned.</p>
+        <div class="rec ${d.driver===null?'sel':''}" data-drv="none" onclick="S.wizard.d.driver=null;drawWizard()">
+          <b>Leave unassigned</b><div class="why">Creates the shipment in <b>Created</b> state for a dispatcher to assign later.</div></div>
+        ${ranked.slice(0,4).map(({d:x,score},i)=>`
+          <div class="rec ${d.driver===x.id?'sel':''}" onclick="S.wizard.d.driver='${x.id}';drawWizard()">
+            <div class="spread">
+              <div class="row"><div class="mini-avatar">${x.init}</div>
+                <div><b>${esc(x.name)}</b><div class="muted">${x.vehicle} · ${x.cap} kg · ${x.dist} km away</div></div></div>
+              ${i===0?'<span class="badge green">Recommended</span>':`<span class="muted">score ${score}</span>`}
+            </div>
+            <div class="why">${x.status.replace('_',' ')} · ${x.load} active · ETA to pickup ~${Math.max(3,Math.round(x.dist*2.6))} min
+              ${x.cap < (parseInt(d.weight,10)||0)?`<br><span class="red">⚠ capacity ${x.cap} kg is under this load</span>`:''}</div>
+          </div>`).join('')}`;
+    }
+    default: {
+      const dr = d.driver?driver(d.driver):null;
+      return `<div class="review-line"><span class="muted">Customer</span><b>${esc(d.customer)}</b></div>
+        <div class="review-line"><span class="muted">Priority</span><b>${d.priority}</b></div>
+        <div class="review-line"><span class="muted">Pickup</span><b style="text-align:right">${esc(d.from)}</b></div>
+        <div class="review-line"><span class="muted">Delivery</span><b style="text-align:right">${esc(d.to)}</b></div>
+        <div class="review-line"><span class="muted">Weight</span><b>${esc(d.weight)} kg</b></div>
+        <div class="review-line"><span class="muted">Window</span><b>${d.window}</b></div>
+        <div class="review-line"><span class="muted">Driver</span><b>${dr?esc(dr.name)+' · '+dr.vehicle:'Unassigned'}</b></div>
+        ${d.notes?`<div class="review-line"><span class="muted">Notes</span><b style="text-align:right">${esc(d.notes)}</b></div>`:''}
+        <p class="muted" style="margin-top:14px">Creating this shipment writes an audit entry, notifies the customer and — if a driver
+        is selected — pushes the job to their mobile app.</p>`;
+    }
+  }
+}
+function drawWizard(){
+  const st = S.wizard.step;
+  overlay(`<div class="modal">
+    <div class="modal-head"><b>New shipment</b><button class="btn sm" onclick="closeOverlay()">×</button></div>
+    <div class="steps">${WSTEPS.map((w,i)=>
+      `<span class="step ${i===st?'active':i<st?'done':''}">${i<st?'✓ ':''}${i+1}. ${w}</span>`).join('')}</div>
+    <div class="modal-body">${wizardBody()}</div>
+    <div class="modal-foot">
+      <button class="btn" ${st===0?'disabled':''} onclick="S.wizard.step--;drawWizard()">← Back</button>
+      <div class="actions">
+        <button class="btn" onclick="closeOverlay()">Cancel</button>
+        ${st===WSTEPS.length-1
+          ? `<button class="btn primary" onclick="createShipment()">Create shipment</button>`
+          : `<button class="btn primary" onclick="wizardNext()">Continue →</button>`}
+      </div>
+    </div>
+  </div>`);
+}
+function wizardNext(){
+  const d = S.wizard.d;
+  const problem = [
+    null,
+    !d.from.trim() && 'Enter a pickup address.',
+    !d.to.trim()   && 'Enter a delivery address.',
+    !(parseInt(d.weight,10)>0) && 'Enter a package weight in kilograms.',
+    !d.window && 'Choose a delivery window.',
+    null
+  ][S.wizard.step];
+  if(problem) return toast(problem,1);
+  S.wizard.step++;
+  drawWizard();
+}
+function createShipment(){
+  const d = S.wizard.d;
+  const id = 'FF-' + (10297 + DB.shipments.length);
+  const dr = d.driver?driver(d.driver):null;
+  const s = {
+    id, customer:d.customer, from:d.from, to:d.to, driver:null, vehicle:null,
+    status:'created', priority:d.priority, weight:d.weight+' kg', window:d.window,
+    eta:'—', lateRisk: d.priority==='Critical'?40:12, amount: Math.max(8000,parseInt(d.weight,10)*180),
+    payment:'pending', pod:null, created:now(),
+    history:[['created',now(),S.user.name]]
+  };
+  DB.shipments.unshift(s);
+  audit(S.user.name,'Created shipment',id);
+  DB.activity.unshift([now(),'info',`${id} created`,`${d.customer} · ${d.window}`]);
+  closeOverlay();
+  if(dr){
+    S.assign = {id, pick:dr.id};
+    confirmAssign();
+  } else {
+    toast(`${id} created and waiting for a driver.`);
+  }
+  go('shipment/'+id);
+}
+
+/* ===================================================== DRIVER WORKSPACE */
+/* Same web shell as dispatch, but stripped to one job at a time. Drivers use
+   this on a laptop in the depot and on a phone browser on the road, so it is
+   the ordinary responsive layout — not a separate mobile app. */
+const DRIVER_NAV = [['My work',[
+  ['jobs','▤','Deliveries'],
+  ['droute','⌖','Today&rsquo;s Route'],
+  ['history','☷','History'],
+  ['dprofile','◯','Profile']
+]]];
+
+function driverJobs(){ return DB.shipments.filter(s=>s.driver===S.user.driverId); }
+// Sorted by window start — "HH:MM – HH:MM" compares correctly as a string.
+const driverActive = () => driverJobs()
+  .filter(s=>!['delivered','failed','cancelled'].includes(s.status))
+  .sort((a,b)=>a.window.localeCompare(b.window));
+
+// Each status maps to exactly one next action, so the driver never has to choose.
+const NEXT_STEP = {
+  assigned:  {to:'accepted',   label:'Accept delivery',           hint:'Dispatch assigned this to you. Accepting confirms you are taking it.'},
+  accepted:  {to:'picked_up',  label:'Confirm pickup',            hint:'Collect the goods, then confirm pickup to start the delivery leg.'},
+  picked_up: {to:'in_transit', label:'Start driving to customer',  hint:'Marks you as on the road. The customer gets an out-for-delivery notice.'},
+  in_transit:{to:'arriving',   label:'I have arrived',            hint:'Tells dispatch and the customer you are at the delivery address.'},
+  arriving:  {to:null,         label:'Capture proof of delivery',  hint:'Receiver name, signature and photo are required before this can complete.'}
+};
+
+function renderDriver(page,arg){
+  if(page==='job')      return renderDriverJob(arg);
+  if(page==='pod')      return renderPod(arg);
+  if(page==='droute')   return renderDriverRoute();
+  if(page==='history')  return renderDriverHistory();
+  if(page==='dprofile') return renderMyProfile();
+  return renderDriverJobs();
+}
+
+/* --------------------------------------------------------- delivery list */
+function renderDriverJobs(){
+  const me = driver(S.user.driverId);
+  const active = driverActive();
+  const doneToday = driverJobs().filter(s=>s.status==='delivered').length;
+  const next = active[0];
+
+  return pageHead('My Deliveries',
+      `${esc(me.name)} · vehicle ${me.vehicle} · ${me.cap} kg capacity`,
+      `<button class="btn" onclick="toast('You are on break — dispatch will not assign new jobs')">Go on break</button>
+       <button class="btn" onclick="toast('Refreshed — no new assignments')">Refresh</button>`)
+  + `<div class="kpis four">
+      <div class="stat"><div class="stat-label">Active deliveries</div><div class="stat-value blue">${active.length}</div>
+        <div class="stat-note">assigned to you</div></div>
+      <div class="stat"><div class="stat-label">Completed today</div><div class="stat-value green">${doneToday}</div>
+        <div class="stat-note">proof captured</div></div>
+      <div class="stat"><div class="stat-label">Next window closes</div><div class="stat-value">${next?next.window.split(' – ')[1]:'—'}</div>
+        <div class="stat-note">${next?next.id:'nothing scheduled'}</div></div>
+      <div class="stat"><div class="stat-label">Success rate</div><div class="stat-value">${me.success}%</div>
+        <div class="stat-note">last 30 days</div></div>
+    </div>
+
+    <div class="grid-detail">
+      <div class="panel">
+        <div class="panel-head"><div><div class="panel-title">Active deliveries</div>
+          <div class="panel-sub">Ordered by delivery window — work top to bottom</div></div>
+          <span class="muted">${active.length} open</span></div>
+        <div class="panel-body">
+          ${active.length ? `<div class="job-grid">${active.map((s,i)=>{
+            const step = NEXT_STEP[s.status];
+            return `<div class="job-card ${i===0?'next':''}">
+              <div class="spread"><h3>${s.id}</h3>${badge(s.status)}</div>
+              <div class="muted">${esc(s.customer)}${i===0?' · <b class="blue">next up</b>':''}</div>
+              <div class="addr"><span class="mk">◉</span><div><b>Pick up</b>
+                <div class="muted">${esc(s.from)}</div></div></div>
+              <div class="addr"><span class="mk">⚑</span><div><b>Deliver to</b>
+                <div class="muted">${esc(s.to)}</div></div></div>
+              <div class="spread" style="margin-top:12px;padding-top:12px;border-top:1px solid var(--line)">
+                <span class="muted">${s.window} · ${s.weight}</span>
+                <button class="btn ${i===0?'primary':''}" onclick="go('job/${s.id}')">
+                  ${step?step.label:'Open'} →</button>
+              </div>
+            </div>`;}).join('')}</div>`
+          : emptyState('Nothing assigned','You have no active deliveries. Dispatch will notify you when a job arrives.','')}
+        </div>
+      </div>
+
+      <div>
+        <div class="panel" style="margin-bottom:16px">
+          <div class="panel-head"><div><div class="panel-title">Your position</div>
+            <div class="panel-sub"><span class="live-dot"></span>Sharing GPS · updated <span class="ago">just now</span></div></div></div>
+          ${mapHTML('short', FLEET.filter(f=>f.d===S.user.driverId), '')}
+        </div>
+        ${next ? `<div class="panel">
+          <div class="panel-head"><div class="panel-title">Next stop</div>${badge(next.status)}</div>
+          <div class="panel-body">
+            <b style="font-size:15px">${next.id}</b>
+            <div class="muted" style="margin:3px 0 12px">${esc(next.customer)}</div>
+            <div class="review-line"><span class="muted">Address</span><b style="text-align:right">${esc(next.to)}</b></div>
+            <div class="review-line"><span class="muted">Window</span><b>${next.window}</b></div>
+            <div class="review-line"><span class="muted">Weight</span><b>${next.weight}</b></div>
+            <button class="btn primary block lg" style="margin-top:14px" onclick="go('job/${next.id}')">Open delivery</button>
+          </div></div>` : ''}
+      </div>
+    </div>`;
+}
+
+/* ------------------------------------------------------- one delivery */
+function renderDriverJob(id){
+  const s = ship(id);
+  if(!s || s.driver!==S.user.driverId){
+    return pageHead('Not your delivery','This shipment is not assigned to you.',
+        `<button class="btn" onclick="go('jobs')">← My deliveries</button>`)
+      + `<div class="panel">${emptyState('403 — not assigned to you',
+          'Drivers only see their own jobs. The API checks the assignment too, so changing the URL achieves nothing.',
+          `<button class="btn primary" onclick="go('jobs')">Back to my deliveries</button>`)}</div>`;
+  }
+  const step = NEXT_STEP[s.status];
+  const cust = DB.customers.find(c=>c.name===s.customer) || {contact:'—',phone:'—'};
+
+  const actionBar = step
+    ? `<div class="action-bar">
+         <div class="what"><b>Next step:</b> ${step.hint}</div>
+         <div class="actions">
+           ${['in_transit','arriving'].includes(s.status)
+             ? `<button class="btn danger" onclick="reportFailed('${s.id}')">Report failed delivery</button>` : ''}
+           ${step.to
+             ? `<button class="btn lg go" onclick="advance('${s.id}','${step.to}','${esc(S.user.name)}')">${step.label}</button>`
+             : `<button class="btn lg go" onclick="go('pod/${s.id}')">${step.label} →</button>`}
+         </div>
+       </div>`
+    : `<div class="action-bar"><div class="what">This delivery is closed — no further action is available to you.</div>
+         <button class="btn" onclick="go('jobs')">Back to deliveries</button></div>`;
+
+  return pageHead(s.id, `${esc(s.customer)} · ${s.priority} priority · window ${s.window}`,
+      `<button class="btn" onclick="go('jobs')">← My deliveries</button>
+       <button class="btn primary" onclick="toast('Opening turn-by-turn navigation to ${esc(s.to)}')">🧭 Navigate</button>`)
+  + `<div class="grid-detail">
+      <div>
+        <div class="panel" style="margin-bottom:16px">
+          <div class="panel-head"><div class="panel-title">Delivery details</div>${badge(s.status)}</div>
+          <div class="panel-body">
+            <div class="addr"><span class="mk">◉</span><div><b>Pick up</b>
+              <div class="muted">${esc(s.from)}</div></div></div>
+            <div class="addr"><span class="mk">↓</span><div class="muted">${s.weight} · ${s.priority} priority</div></div>
+            <div class="addr"><span class="mk">⚑</span><div><b>Deliver to</b>
+              <div class="muted">${esc(s.to)}</div></div></div>
+            <div class="review-line" style="margin-top:10px"><span class="muted">Delivery window</span><b>${s.window}</b></div>
+            <div class="review-line"><span class="muted">ETA</span><b class="${s.lateRisk>=50?'red':''}">${s.eta}</b></div>
+          </div>
+          ${actionBar}
+        </div>
+
+        <div class="panel">
+          <div class="panel-head"><div><div class="panel-title">Progress</div>
+            <div class="panel-sub">Each step is timestamped and sent to dispatch</div></div></div>
+          <div class="panel-body">${timeline(s)}</div>
+        </div>
+      </div>
+
+      <div>
+        <div class="panel" style="margin-bottom:16px">
+          <div class="panel-head"><div class="panel-title">Route</div>
+            <div class="panel-sub"><span class="live-dot"></span>Live</div></div>
+          ${mapHTML('short', FLEET.filter(f=>f.s===s.id || f.d===S.user.driverId), '')}
+        </div>
+        <div class="panel" style="margin-bottom:16px">
+          <div class="panel-head"><div class="panel-title">Customer contact</div></div>
+          <div class="panel-body">
+            <div class="review-line"><span class="muted">Company</span><b>${esc(s.customer)}</b></div>
+            <div class="review-line"><span class="muted">Contact</span><b>${esc(cust.contact)}</b></div>
+            <div class="review-line"><span class="muted">Phone</span><b>${cust.phone}</b></div>
+            <button class="btn block" style="margin-top:12px" onclick="toast('Calling ${esc(cust.contact)}…')">Call contact</button>
+          </div>
+        </div>
+        ${s.pod ? `<div class="panel">
+          <div class="panel-head"><div class="panel-title">Proof of delivery</div><span class="badge green">Captured</span></div>
+          <div class="panel-body">
+            <div class="review-line"><span class="muted">Received by</span><b>${esc(s.pod.receiver)}</b></div>
+            <div class="review-line"><span class="muted">Time</span><b>${s.pod.time}</b></div>
+            <div class="review-line"><span class="muted">GPS</span><b>${s.pod.gps}</b></div>
+          </div></div>` : ''}
+      </div>
+    </div>`;
+}
+function reportFailed(id){
+  advance(id,'failed',S.user.name,'receiver unavailable');
+  go('jobs');
+}
+
+/* ------------------------------------------------------------- route */
+function renderDriverRoute(){
+  const stops = driverActive();
+  return pageHead('Today&rsquo;s Route',
+      `${stops.length} stops · 38 km · finishes around 16:20`,
+      `<button class="btn" onclick="toast('Route re-sequenced — saves 11 minutes')">Re-optimize</button>`)
+  + `<div class="grid-detail">
+      <div class="panel">
+        <div class="panel-head"><div><div class="panel-title">Planned route</div>
+          <div class="panel-sub"><span class="live-dot"></span>Your position updates every 2 seconds</div></div></div>
+        ${mapHTML('tall', FLEET.filter(f=>f.d===S.user.driverId), '')}
+      </div>
+      <div class="panel">
+        <div class="panel-head"><div class="panel-title">Stops in order</div><span class="muted">${stops.length}</span></div>
+        ${stops.length ? `<div class="divide">${stops.map((s,i)=>`
+          <div style="padding:14px 16px">
+            <div class="spread"><b>Stop ${i+1} · ${s.id}</b>${badge(s.status)}</div>
+            <div class="muted" style="margin-top:4px">${esc(s.to)}</div>
+            <div class="muted" style="margin-top:2px">Window ${s.window} · ${s.weight}</div>
+            <button class="btn sm" style="margin-top:9px" onclick="go('job/${s.id}')">Open</button>
+          </div>`).join('')}</div>`
+        : emptyState('No stops','Your route is clear for today.','')}
+      </div>
+    </div>`;
+}
+
+/* ----------------------------------------------------------- history */
+function renderDriverHistory(){
+  const past = driverJobs().filter(s=>['delivered','failed','returned'].includes(s.status));
+  return pageHead('Delivery History','Everything you have closed, with the proof attached.',
+      `<button class="btn" onclick="toast('Export queued')">↓ Export</button>`)
+  + `<div class="panel">${past.length ? `<div class="table-wrap"><table class="table">
+      <thead><tr><th>Shipment</th><th>Customer</th><th>Destination</th><th>Completed</th><th>Received by</th><th>Status</th><th></th></tr></thead>
+      <tbody>${past.map(s=>`<tr>
+        <td><b>${s.id}</b></td>
+        <td>${esc(s.customer)}</td>
+        <td class="muted">${esc(s.to)}</td>
+        <td class="muted">${s.pod?s.pod.time:s.history[s.history.length-1][1]}</td>
+        <td>${s.pod?esc(s.pod.receiver):'<span class="faint">—</span>'}</td>
+        <td>${badge(s.status)}</td>
+        <td><button class="btn sm" onclick="go('job/${s.id}')">View</button></td>
+      </tr>`).join('')}</tbody></table></div>`
+    : emptyState('Nothing yet','Completed deliveries will appear here.','')}</div>`;
+}
+
+/* ----------------------------------------------------------- profile */
+function renderMyProfile(){
+  const d = driver(S.user.driverId);
+  return pageHead(esc(d.name), `${d.id} · ${d.phone}`,
+      `<button class="btn" onclick="logout()">Sign out</button>`)
+  + `<div class="kpis four">
+      <div class="stat"><div class="stat-label">Deliveries (30d)</div><div class="stat-value">${d.deliveries}</div></div>
+      <div class="stat"><div class="stat-label">Success rate</div><div class="stat-value green">${d.success}%</div></div>
+      <div class="stat"><div class="stat-label">Rating</div><div class="stat-value">★ ${d.rating}</div></div>
+      <div class="stat"><div class="stat-label">Active load</div><div class="stat-value">${driverActive().length}</div></div>
+    </div>
+    <div class="grid-detail">
+      <div class="panel">
+        <div class="panel-head"><div class="panel-title">Assigned vehicle</div></div>
+        <div class="panel-body">
+          <div class="review-line"><span class="muted">Vehicle</span><b>${d.vehicle}</b></div>
+          <div class="review-line"><span class="muted">Capacity</span><b>${d.cap} kg</b></div>
+          <div class="review-line"><span class="muted">Current status</span>
+            <b class="${d.status==='offline'?'red':'green'}">${d.status.replace('_',' ')}</b></div>
+          <p class="muted" style="margin-top:12px">Shipments heavier than your vehicle capacity cannot be assigned to you — the
+          server rejects them even if dispatch tries.</p>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><div class="panel-title">Availability</div></div>
+        <div class="divide">
+          <div class="spread" style="padding:14px 18px">
+            <div><b style="font-size:13px">Share my location</b>
+              <div class="muted" style="margin-top:2px">Required while you have an active delivery.</div></div>
+            <div class="toggle on" onclick="toast('Location sharing cannot be disabled mid-delivery')"><div class="knob"></div></div>
+          </div>
+          <div class="spread" style="padding:14px 18px">
+            <div><b style="font-size:13px">Accept new assignments</b>
+              <div class="muted" style="margin-top:2px">Turn off to finish your route without new jobs.</div></div>
+            <div class="toggle on" onclick="this.classList.toggle('on');toast('Availability updated')"><div class="knob"></div></div>
+          </div>
+        </div>
+      </div>
+    </div>`;
+}
+
+/* ================================================== PROOF OF DELIVERY */
+function renderPod(id){
+  const s = ship(id);
+  if(!s || s.driver!==S.user.driverId){
+    return pageHead('Not your delivery','','')
+      + `<div class="panel">${emptyState('403 — not assigned to you','','')}</div>`;
+  }
+  if(!S.podDraft || S.podDraft.id!==id) S.podDraft = {id, receiver:'', photo:false, sig:false, notes:''};
+  const p = S.podDraft;
+  const req = (rid,met,label) => `<div class="pod-req ${met?'met':''}" id="${rid}"><span>${met?'✓':'○'}</span>${label}</div>`;
+
+  return pageHead('Proof of delivery', `${s.id} · ${esc(s.to)} · ${esc(s.customer)}`,
+      `<button class="btn" onclick="go('job/${id}')">← Back to delivery</button>`)
+  + `<div class="grid-detail">
+      <div class="panel">
+        <div class="panel-head"><div><div class="panel-title">Capture</div>
+          <div class="panel-sub">All three are required — the server will not accept a partial POD</div></div></div>
+        <div class="panel-body">
+          <div class="form-grid">
+            <div class="field full"><label>Receiver name *</label>
+              <input id="podName" placeholder="Who accepted the delivery?" value="${esc(p.receiver)}"
+                oninput="S.podDraft.receiver=this.value;updatePodReqs()"></div>
+
+            <div class="field"><label>Signature *</label>
+              <canvas id="sig" class="sig-pad" width="620" height="170"></canvas>
+              <div class="spread" style="margin-top:7px">
+                <span class="hint">Sign with a mouse, pen or finger</span>
+                <button class="btn sm" onclick="clearSig()">Clear</button></div></div>
+
+            <div class="field"><label>Delivery photo *</label>
+              <div class="photo-drop ${p.photo?'filled':''}" id="photoDrop" onclick="capturePhoto()">
+                ${p.photo ? '✓ Photo captured · pod-'+s.id+'.jpg · 412 KB' : '📷 Click to capture a delivery photo'}
+              </div>
+              <div class="hint" style="margin-top:6px">JPEG or PNG, max 5 MB. Uploaded to S3 — the database stores only the key,
+                mime type and size.</div></div>
+
+            <div class="field full"><label>Notes</label>
+              <textarea rows="2" placeholder="Anything worth recording?"
+                oninput="S.podDraft.notes=this.value">${esc(p.notes)}</textarea></div>
+          </div>
+        </div>
+        <div class="action-bar">
+          <div class="what">
+            ${req('reqName',!!p.receiver.trim(),'Receiver name')}
+            ${req('reqSig',p.sig,'Signature')}
+            ${req('reqPhoto',p.photo,'Delivery photo')}
+          </div>
+          <button class="btn lg go" onclick="submitPod('${id}')">Complete delivery</button>
+        </div>
+      </div>
+
+      <div>
+        <div class="panel" style="margin-bottom:16px">
+          <div class="panel-head"><div class="panel-title">Captured automatically</div></div>
+          <div class="panel-body">
+            <div class="review-line"><span class="muted">GPS at capture</span><b>31.5204, 74.3587</b></div>
+            <div class="review-line"><span class="muted">Timestamp</span><b>${now()}</b></div>
+            <div class="review-line"><span class="muted">Captured by</span><b>${esc(S.user.name)}</b></div>
+            <div class="review-line"><span class="muted">Device</span><b>Web · ${esc(driver(S.user.driverId).vehicle)}</b></div>
+          </div>
+        </div>
+        <div class="panel">
+          <div class="panel-head"><div class="panel-title">Delivery</div>${badge(s.status)}</div>
+          <div class="panel-body">
+            <div class="review-line"><span class="muted">Deliver to</span><b style="text-align:right">${esc(s.to)}</b></div>
+            <div class="review-line"><span class="muted">Window</span><b>${s.window}</b></div>
+            <div class="review-line"><span class="muted">Weight</span><b>${s.weight}</b></div>
+            <p class="muted" style="margin-top:12px">Completing this marks the shipment <b>Delivered</b>, generates the invoice,
+            notifies the customer and updates analytics — all from one verified server-side event.</p>
+          </div>
+        </div>
+      </div>
+    </div>`;
+}
+function updatePodReqs(){
+  const p = S.podDraft; if(!p) return;
+  const set = (sel,met) => {
+    const e = $(sel); if(!e) return;
+    e.classList.toggle('met',met);
+    e.firstElementChild.textContent = met ? '✓' : '○';
+  };
+  set('#reqName',!!p.receiver.trim());
+  set('#reqSig',p.sig);
+  set('#reqPhoto',p.photo);
+}
+
+function capturePhoto(){
+  S.podDraft.photo = true;
+  const el = $('#photoDrop');
+  el.classList.add('filled');
+  el.textContent = '✓ Photo captured · pod-'+S.podDraft.id+'.jpg · 412 KB';
+  updatePodReqs();
+  toast('Photo attached (uploaded to S3 in the real app)');
+}
+function clearSig(){
+  const c = $('#sig'); if(!c) return;
+  c.getContext('2d').clearRect(0,0,c.width,c.height);
+  S.podDraft.sig = false;
+  updatePodReqs();
+}
+function initSignature(){
+  const c = $('#sig'); if(!c || c.dataset.ready) return;
+  c.dataset.ready = '1';
+  const ctx = c.getContext('2d');
+  ctx.lineWidth = 2.4; ctx.lineCap = 'round'; ctx.strokeStyle = '#182230';
+  let drawing = false;
+  const pt = e => {
+    const r = c.getBoundingClientRect();
+    return [(e.clientX-r.left) * (c.width/r.width), (e.clientY-r.top) * (c.height/r.height)];
+  };
+  c.addEventListener('pointerdown',e=>{
+    drawing = true; ctx.beginPath(); ctx.moveTo(...pt(e));
+    c.setPointerCapture(e.pointerId);
+  });
+  c.addEventListener('pointermove',e=>{
+    if(!drawing) return;
+    ctx.lineTo(...pt(e)); ctx.stroke();
+    if(!S.podDraft.sig){ S.podDraft.sig = true; updatePodReqs(); }
+  });
+  c.addEventListener('pointerup',()=>{ drawing = false; });
+}
+function submitPod(id){
+  const p = S.podDraft;
+  if(!p.receiver.trim()) return toast('Receiver name is required.',1);
+  if(!p.sig)   return toast('A signature is required before completing the delivery.',1);
+  if(!p.photo) return toast('A delivery photo is required before completing the delivery.',1);
+  const s = ship(id);
+  s.pod = {receiver:p.receiver.trim(), time:now(), gps:'31.5204, 74.3587', photo:true, sig:true, notes:p.notes};
+  S.podDraft = null;
+  if(advance(id,'delivered',S.user.name)) go('jobs');
+}
+
+/* ======================================================= CLIENT PORTAL */
+const CLIENT_NAV = [['Portal',[
+  ['client','▣','My Shipments'],
+  ['invoices','◫','Invoices &amp; Payments'],
+  ['profile','◯','Profile']
+]]];
+function renderClient(page){
+  const mine = DB.shipments.filter(s=>s.customer===S.user.customer);
+  if(page==='invoices'){
+    const inv = DB.invoices.filter(i=>i.customer===S.user.customer);
+    return pageHead('Invoices &amp; Payments','Your billing history with Acme Logistics.','')
+    + `<div class="panel">${inv.length?`<div class="table-wrap"><table class="table">
+        <thead><tr><th>Invoice</th><th>Shipment</th><th>Amount</th><th>Status</th><th>Date</th><th></th></tr></thead>
+        <tbody>${inv.map(i=>`<tr><td><b>${i.id}</b></td><td>${i.shipment}</td><td>${money(i.amount)}</td>
+          <td><span class="badge ${i.status==='paid'?'green':i.status==='failed'?'red':'amber'}">${i.status}</span></td>
+          <td class="muted">${i.date}</td>
+          <td>${i.status==='pending'
+            ? `<button class="btn sm primary" onclick="payInvoice('${i.id}')">Pay now</button>`
+            : `<button class="btn sm" onclick="toast('Receipt downloaded')">Receipt</button>`}</td></tr>`).join('')}</tbody>
+      </table></div>`:emptyState('No invoices','Nothing has been billed to your account yet.','')}</div>`;
+  }
+  if(page==='profile'){
+    const c = DB.customers.find(x=>x.name===S.user.customer);
+    return pageHead('Profile','Your account details.','')
+    + `<div class="panel" style="max-width:560px"><div class="panel-body">
+        <div class="review-line"><span class="muted">Company</span><b>${esc(c.name)}</b></div>
+        <div class="review-line"><span class="muted">Contact</span><b>${esc(S.user.name)}</b></div>
+        <div class="review-line"><span class="muted">Phone</span><b>${c.phone}</b></div>
+        <div class="review-line"><span class="muted">Outstanding balance</span><b>${money(c.outstanding)}</b></div>
+        <button class="btn" style="margin-top:14px" onclick="logout()">Sign out</button>
+      </div></div>`;
+  }
+  const activeCount = mine.filter(s=>!['delivered','failed','cancelled'].includes(s.status)).length;
+  return pageHead('My Shipments',`Deliveries booked by ${esc(S.user.customer)}.`,
+      `<button class="btn primary" onclick="openWizard()">＋ Book a delivery</button>`)
+  + `<div class="kpis four">
+      <div class="stat"><div class="stat-label">In progress</div><div class="stat-value blue">${activeCount}</div></div>
+      <div class="stat"><div class="stat-label">Delivered</div><div class="stat-value green">${mine.filter(s=>s.status==='delivered').length}</div></div>
+      <div class="stat"><div class="stat-label">Issues</div><div class="stat-value ${mine.filter(s=>s.status==='failed').length?'red':''}">${mine.filter(s=>s.status==='failed').length}</div></div>
+      <div class="stat"><div class="stat-label">Outstanding</div><div class="stat-value">${money(DB.customers.find(c=>c.name===S.user.customer).outstanding)}</div></div>
+    </div>
+    <div class="panel">${mine.length?`<div class="table-wrap"><table class="table">
+      <thead><tr><th>Shipment</th><th>Delivering to</th><th>Window</th><th>Status</th><th>ETA</th><th></th></tr></thead>
+      <tbody>${mine.map(s=>`<tr>
+        <td><b>${s.id}</b></td><td class="muted">${esc(s.to)}</td><td class="muted">${s.window}</td>
+        <td>${badge(s.status)}</td><td>${s.eta}</td>
+        <td><button class="btn sm" onclick="go('track/${s.id}')">Track</button></td></tr>`).join('')}</tbody>
+    </table></div>`:emptyState('No shipments yet','Book your first delivery and it will appear here.',
+      `<button class="btn primary" onclick="openWizard()">Book a delivery</button>`)}</div>`;
+}
+function payInvoice(id){
+  const i = DB.invoices.find(x=>x.id===id);
+  toast('Redirecting to Stripe Checkout…');
+  setTimeout(()=>{
+    i.status='paid';
+    audit('System','Stripe webhook processed (payment_intent.succeeded)',id);
+    toast(`${id} paid — confirmed by verified webhook, not by the browser.`);
+    render();
+  },900);
+}
+
+/* ================================================= PUBLIC TRACKING PAGE */
+function renderTrack(id){
+  const s = ship(id);
+  if(!s) return `<div class="track-wrap"><div class="track-inner">
+      <div class="logo" style="justify-content:center"><div class="logo-mark">F</div>FleetFlow</div>
+      <div class="panel">${emptyState('Tracking number not found',
+        'Check the code on your confirmation message and try again.',
+        `<a class="btn primary" href="#/track/FF-10293">Try the sample shipment</a>`)}</div></div></div>`;
+
+  const done = s.history.map(h=>h[0]);
+  const steps = [['created','Order created'],['assigned','Driver assigned'],['picked_up','Picked up'],
+                 ['in_transit','In transit'],['delivered','Delivered']];
+  const idx = steps.findIndex(([k])=>!done.includes(k));
+  const d = driver(s.driver);
+  const f = FLEET.find(x=>x.s===s.id);
+
+  return `<div class="track-wrap"><div class="track-inner">
+    <div class="spread" style="margin-bottom:18px">
+      <div class="logo" style="padding:0"><div class="logo-mark">F</div>FleetFlow</div>
+      <a class="btn" href="#/login">Sign in</a>
+    </div>
+
+    <div class="panel" style="margin-bottom:16px">
+      <div class="panel-head">
+        <div><div class="panel-title">Shipment ${s.id}</div>
+          <div class="panel-sub">${esc(s.customer)} · delivering to ${esc(s.to)}</div></div>
+        ${badge(s.status)}
+      </div>
+      <div class="stepper">${steps.map(([k,l],i)=>`
+        <div class="s ${done.includes(k)?'done':i===idx?'current':''}">
+          <div class="b">${done.includes(k)?'✓':''}</div>${l}</div>`).join('')}</div>
+      <div class="panel-body" style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;border-top:1px solid var(--line);margin-top:8px">
+        <div><div class="muted">Estimated arrival</div><b style="font-size:16px">${s.status==='delivered'?s.pod.time:'15:45'}</b></div>
+        <div><div class="muted">Driver</div><b style="font-size:16px">${d?esc(d.name):'Not assigned yet'}</b></div>
+        <div><div class="muted">Vehicle</div><b style="font-size:16px">${s.vehicle||'—'}</b></div>
+      </div>
+    </div>
+
+    ${s.status!=='delivered' && f ? `<div class="panel" style="margin-bottom:16px">
+      <div class="panel-head"><div class="panel-title">Live location</div>
+        <div class="panel-sub">${f.stale
+          ? '<span class="live-dot red"></span><span class="red">⚠ Location delayed · last update 4 min ago</span>'
+          : '<span class="live-dot"></span>Updated <span class="ago">just now</span>'}</div></div>
+      ${mapHTML('', [f], '')}
+    </div>` : ''}
+
+    <div class="panel">
+      <div class="panel-head"><div class="panel-title">Delivery timeline</div></div>
+      <div class="panel-body">${timeline(s)}</div>
+    </div>
+
+    ${s.pod ? `<div class="panel" style="margin-top:16px">
+      <div class="panel-head"><div class="panel-title">Delivered</div><span class="badge green">Signed</span></div>
+      <div class="panel-body">
+        <div class="review-line"><span class="muted">Received by</span><b>${esc(s.pod.receiver)}</b></div>
+        <div class="review-line"><span class="muted">Time</span><b>${s.pod.time}</b></div>
+        <div class="review-line"><span class="muted">Location</span><b>${s.pod.gps}</b></div>
+      </div></div>` : ''}
+
+    <p class="muted" style="text-align:center;margin-top:22px">
+      No account needed to view this page · powered by FleetFlow</p>
+  </div></div>`;
+}
+</script>
+
+<script>
+/* ============================================================== ROUTER */
+const PAGES = {
+  dashboard:renderDashboard, shipments:renderShipments, tracking:renderTracking, routes:renderRoutes,
+  drivers:renderDrivers, vehicles:renderVehicles, maintenance:renderMaintenance, customers:renderCustomers,
+  payments:renderPayments, analytics:renderAnalytics, users:renderUsers, audit:renderAudit, settings:renderSettings
+};
+
+function render(){
+  const raw = (location.hash||'').replace(/^#\/?/,'');
+  const [page,arg] = raw.split('/');
+  const root = $('#root');
+
+  if(page==='track'){ root.innerHTML = renderTrack(arg); return after(); }
+  if(!S.user || page==='login'){ root.innerHTML = renderLogin(); return after(); }
+  if(!page){ go(HOME[S.user.role]); return; }
+
+  if(S.user.role==='driver'){
+    if(!can('driver',page)){ root.innerHTML = shell(page, renderDenied(page)); return after(); }
+    root.innerHTML = shell(['job','pod'].includes(page)?'jobs':page, renderDriver(page,arg));
+    return after();
+  }
+  if(S.user.role==='client'){
+    if(!can('client',page)) { root.innerHTML = shell(page, renderDenied(page)); return after(); }
+    root.innerHTML = shell(page, renderClient(page,arg)); return after();
+  }
+
+  const key = (page==='shipment'||page==='driver') ? page : page;
+  if(!can(S.user.role,key)){ root.innerHTML = shell(page, renderDenied(page)); return after(); }
+
+  if(PAGES[page])         root.innerHTML = shell(page, PAGES[page]());
+  else if(page==='shipment') root.innerHTML = shell('shipments', renderShipment(arg));
+  else if(page==='driver')   root.innerHTML = shell('drivers',  renderDriverProfile(arg));
+  else                    root.innerHTML = shell(page, renderDenied(page));
+  after();
+}
+function after(){ initSignature(); }
+
+function navigate(){
+  S.filter = '';
+  const p = (location.hash||'').replace(/^#\/?/,'').split('/')[0];
+  closeOverlay();
+  if(['shipments','analytics'].includes(p)){
+    S.loading = true; render();
+    setTimeout(()=>{ S.loading = false; render(); }, 420);   // shows the skeleton state
+  } else render();
+}
+
+/* ================================================= LIVE GPS SIMULATION */
+setInterval(()=>{
+  FLEET.forEach(f=>{
+    if(f.stale) return;                       // offline driver: position frozen, flagged in the UI
+    f.x += f.vx; f.y += f.vy;
+    if(f.x < 8  || f.x > 90) f.vx *= -1;
+    if(f.y < 14 || f.y > 84) f.vy *= -1;
+  });
+  $$('.pin[data-v]').forEach(el=>{
+    const f = FLEET.find(x=>x.v===el.dataset.v);
+    if(f){ el.style.left = f.x+'%'; el.style.top = f.y+'%'; }
+  });
+  S.tick = 0;
+},2000);
+
+setInterval(()=>{
+  S.tick++;
+  const txt = S.tick < 3 ? 'just now' : S.tick+' sec ago';
+  ['#agoLbl','#agoLbl2'].forEach(sel=>{ const e=$(sel); if(e) e.textContent = txt; });
+  $$('.ago').forEach(e=> e.textContent = txt);
+},1000);
+
+/* ================================================================ BOOT */
+window.addEventListener('hashchange', navigate);
+if(!location.hash) location.hash = '#/login';
+render();
+</script>
+</body>
+</html>

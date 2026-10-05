@@ -1,0 +1,25 @@
+# Dependencies
+node_modules
+
+# Backend build output
+dist
+tsconfig.build.tsbuildinfo
+
+# Frontend (Next.js) build output
+.next
+out
+
+# Env files — real secrets never committed; the .example templates are
+.env
+.env*.local
+
+# Logs
+*.log
+npm-debug.log*
+
+# Coverage
+coverage
+
+# OS
+.DS_Store
+Thumbs.db
